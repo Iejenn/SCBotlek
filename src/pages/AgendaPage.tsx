@@ -1,0 +1,127 @@
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../lib/auth'
+import { supabase } from '../lib/supabase'
+import { formatDay, formatTime } from '../lib/format'
+import { isStaff, isTeam, type Attendance, type AttendanceStatus, type TeamEvent } from '../lib/types'
+import AttendanceButtons from '../components/AttendanceButtons'
+import { EventTitle, Score } from '../components/EventBits'
+
+type Tab = 'aankomend' | 'gespeeld'
+
+export default function AgendaPage() {
+  const { profile } = useAuth()
+  const [tab, setTab] = useState<Tab>('aankomend')
+  const [events, setEvents] = useState<TeamEvent[]>([])
+  const [attendance, setAttendance] = useState<Attendance[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const team = isTeam(profile?.role)
+  const myPlayerId = profile?.player_id ?? null
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setLoading(true)
+      // Een activiteit telt nog 3 uur na aanvang als "aankomend" (lopende wedstrijd)
+      const cutoff = new Date(Date.now() - 3 * 3600_000).toISOString()
+      const query = supabase.from('events').select('*').limit(60)
+      const { data } =
+        tab === 'aankomend'
+          ? await query.gte('starts_at', cutoff).order('starts_at', { ascending: true })
+          : await query.lt('starts_at', cutoff).order('starts_at', { ascending: false })
+
+      const list = (data as TeamEvent[] | null) ?? []
+      let att: Attendance[] = []
+      // Aanwezigheid is alleen zichtbaar voor het team (RLS), dus supporters slaan dit over
+      if (team && list.length) {
+        const { data: a } = await supabase
+          .from('attendance')
+          .select('event_id, player_id, status, note')
+          .in('event_id', list.map((e) => e.id))
+        att = (a as Attendance[] | null) ?? []
+      }
+      if (!cancelled) {
+        setEvents(list)
+        setAttendance(att)
+        setLoading(false)
+      }
+    }
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [tab, team])
+
+  function updateMine(eventId: string, status: AttendanceStatus) {
+    if (!myPlayerId) return
+    setAttendance((prev) => [
+      ...prev.filter((a) => !(a.event_id === eventId && a.player_id === myPlayerId)),
+      { event_id: eventId, player_id: myPlayerId, status, note: null },
+    ])
+  }
+
+  return (
+    <div>
+      <div className="page-head">
+        <h1>Agenda</h1>
+        {isStaff(profile?.role) && (
+          <Link to="/activiteit/nieuw" className="btn btn-primary btn-small">+ Nieuw</Link>
+        )}
+      </div>
+
+      <div className="tabs">
+        <button className={tab === 'aankomend' ? 'is-active' : ''} onClick={() => setTab('aankomend')}>Aankomend</button>
+        <button className={tab === 'gespeeld' ? 'is-active' : ''} onClick={() => setTab('gespeeld')}>Geweest</button>
+      </div>
+
+      {team && !myPlayerId && (
+        <p className="notice">Je account is nog niet aan een speler gekoppeld, dus je kunt je nog niet aan- of afmelden.</p>
+      )}
+
+      {loading ? (
+        <p className="muted">Laden…</p>
+      ) : events.length === 0 ? (
+        <p className="muted">Nog niets gepland.</p>
+      ) : (
+        <ul className="event-list">
+          {events.map((ev) => {
+            const evAtt = attendance.filter((a) => a.event_id === ev.id)
+            const mine = evAtt.find((a) => a.player_id === myPlayerId)?.status
+            const coming = evAtt.filter((a) => a.status === 'aanwezig').length
+            const canRespond =
+              team && myPlayerId && tab === 'aankomend' && ev.status !== 'afgelast' && new Date(ev.starts_at) > new Date()
+
+            return (
+              <li key={ev.id}>
+                <Link to={`/activiteit/${ev.id}`} className={`event-card kind-${ev.kind} status-${ev.status}`}>
+                  <div className="event-date">
+                    <span>{formatDay(ev.starts_at)}</span>
+                    <strong>{formatTime(ev.starts_at)}</strong>
+                  </div>
+                  <div className="event-main">
+                    <div className="event-title">
+                      <EventTitle ev={ev} />
+                      {ev.status === 'afgelast' && <span className="badge badge-red">Afgelast</span>}
+                    </div>
+                    <div className="event-meta">
+                      {ev.kind === 'wedstrijd' && ev.is_home !== null && (
+                        <span className="badge">{ev.is_home ? 'Thuis' : 'Uit'}</span>
+                      )}
+                      {ev.location && <span>{ev.location}</span>}
+                      {team && ev.status !== 'afgelast' && <span>{coming} aanwezig</span>}
+                    </div>
+                    {canRespond && (
+                      <AttendanceButtons eventId={ev.id} current={mine} compact onChange={(s) => updateMine(ev.id, s)} />
+                    )}
+                  </div>
+                  {ev.score_us !== null && ev.score_them !== null && <Score ev={ev} />}
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
+  )
+}
