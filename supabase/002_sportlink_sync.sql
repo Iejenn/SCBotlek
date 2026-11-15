@@ -97,7 +97,8 @@ BEGIN
       (m->>'thuisteamid') = c_team                              AS is_home,
       CASE WHEN (m->>'thuisteamid') = c_team
            THEN m->>'uitteam' ELSE m->>'thuisteam' END          AS opponent,
-      m->>'accommodatie'                                        AS location,
+      -- veldnummer erbij, bijv. "Sportpark De Brug · veld 3"
+      concat_ws(' · ', nullif(m->>'accommodatie', ''), nullif(m->>'veld', '')) AS location,
       lower(coalesce(m->>'competitiesoort', ''))                AS soort,
       lower(coalesce(m->>'status', ''))                         AS sl_status,
       -- "1 - 2" -> {1,2}; uitslag-regulier = zonder verlenging/penalty's
@@ -116,7 +117,8 @@ BEGIN
            WHEN soort LIKE '%oefen%' OR soort LIKE '%vriendschap%' THEN 'oefen'
            ELSE 'competitie' END AS competition,
       CASE WHEN sc IS NOT NULL THEN 'gespeeld'
-           WHEN sl_status LIKE '%afgelast%' THEN 'afgelast'
+           -- Sportlink gebruikt "Gestaakt" voor wedstrijden die niet (uit)gespeeld zijn
+           WHEN sl_status LIKE '%afgelast%' OR sl_status LIKE '%gestaakt%' THEN 'afgelast'
            ELSE 'gepland' END AS status,
       CASE WHEN sc IS NULL THEN NULL
            WHEN is_home THEN sc[1]::int ELSE sc[2]::int END AS score_us,
