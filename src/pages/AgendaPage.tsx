@@ -134,6 +134,9 @@ export default function AgendaPage() {
                       {ev.kind === 'wedstrijd' && ev.is_home !== null && (
                         <span className="badge">{ev.is_home ? 'Thuis' : 'Uit'}</span>
                       )}
+                      {/* Competitie is de standaard; beker en oefen krijgen een eigen label */}
+                      {ev.competition === 'beker' && <span className="badge badge-cup">🏆 Beker</span>}
+                      {ev.competition === 'oefen' && <span className="badge">Oefen</span>}
                       {ev.location && <span>{ev.location}</span>}
                       {/* bij oude wedstrijden zonder aanmeldingen (bijv. vorig seizoen) geen "0 aanwezig" */}
                       {team && ev.status !== 'afgelast' && (tab === 'aankomend' || coming > 0) && (

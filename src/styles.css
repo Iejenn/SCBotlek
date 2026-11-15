@@ -269,3 +269,4 @@ label.check-row { flex-direction: row; align-items: center; gap: 10px; }
 .input-name:hover, .input-name:focus { border-color: var(--border); background: var(--surface); }
 .table th.center, .table td.center { text-align: center; }
 .add-player { display: block; width: 100%; margin: 10px 0 14px; }
+.badge-cup { background: color-mix(in srgb, var(--accent) 15%, var(--surface)); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
