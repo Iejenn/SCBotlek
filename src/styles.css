@@ -232,3 +232,13 @@ fieldset:disabled input, fieldset:disabled select, input:disabled { opacity: 0.6
 .stats-table td:first-child { min-width: 120px; }
 .btn-icon { background: none; border: none; cursor: pointer; font-size: 1rem; padding: 4px 6px; border-radius: 6px; }
 .btn-icon:hover { background: var(--bg); }
+
+/* ---------- competitiestand ---------- */
+.card-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.card-head h2 { margin: 0; }
+.segmented-small button { padding: 5px 10px; font-size: 0.85rem; }
+.section-title { margin: 20px 0 10px; }
+.standings tr.is-own td { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); font-weight: 700; }
+.standings tr.is-own td:first-child { box-shadow: inset 3px 0 0 var(--red); }
+.team-cell { display: inline-flex; align-items: center; gap: 8px; }
+.club-logo { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }

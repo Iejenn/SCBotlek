@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 import { seasonLabel, seasonOf, seasonRange } from '../lib/season'
+import Standings from '../components/Standings'
 import { isTeam, type Attendance, type MatchStat, type Player, type TeamEvent } from '../lib/types'
 
 type CompFilter = 'alles' | 'competitie' | 'beker'
@@ -177,6 +178,10 @@ export default function StatsPage() {
         </select>
       </div>
 
+      {/* Sportlink geeft alleen de stand van het lopende seizoen */}
+      {season === seasonOf(new Date()) && <Standings />}
+
+      <h2 className="section-title">Ons team</h2>
       <div className="tabs">
         {(['alles', 'competitie', 'beker'] as CompFilter[]).map((c) => (
           <button key={c} className={comp === c ? 'is-active' : ''} onClick={() => setComp(c)}>
@@ -233,7 +238,7 @@ export default function StatsPage() {
                     <Th k="goals" title="Doelpunten">⚽</Th>
                     <Th k="assists" title="Assists">🅰️</Th>
                     <Th k="ga" title="Doelpunten + assists" className="hide-sm">G+A</Th>
-                    <Th k="cards" title="Kaarten">🟨🟥</Th>
+                    <Th k="cards" title="Kaarten" className="hide-sm">🟨🟥</Th>
                     {hasAttendance && <Th k="matchPct" title="Aanwezig bij wedstrijden">W%</Th>}
                     {hasAttendance && <Th k="trainingPct" title="Aanwezig bij trainingen">T%</Th>}
                   </tr>
@@ -248,7 +253,7 @@ export default function StatsPage() {
                       <td className="num strong">{r.goals || '–'}</td>
                       <td className="num">{r.assists || '–'}</td>
                       <td className="num hide-sm">{r.goals + r.assists || '–'}</td>
-                      <td className="num">
+                      <td className="num hide-sm">
                         {r.yellow || r.red ? `${r.yellow}${r.red ? ` / ${r.red}` : ''}` : '–'}
                       </td>
                       {hasAttendance && (

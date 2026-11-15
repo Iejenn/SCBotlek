@@ -81,4 +81,4 @@ WHERE email = 'gebruikersnaam@users.scbotlek.app';
 - [x] Fase 1: agenda, trainingsreeksen, aan/afmelden, rollen
 - [x] Fase 2: doelpunten/assists/kaarten invoeren, statistiekenpagina per seizoen (topscorer, aanwezigheid %)
 - [x] Koppeling Sportlink (automatisch wedstrijdschema + uitslagen)
-- [ ] Competitiestand tonen
+- [x] Competitiestand (live uit Sportlink, op de pagina Statistieken)
