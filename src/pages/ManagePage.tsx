@@ -84,8 +84,8 @@ function SquadTab() {
       p_id: p.id,
       p_name: p.name,
       p_shirt_number: p.shirt_number,
-      p_position: p.position,
       p_active: p.active,
+      p_is_guest: p.is_guest,
     })
     if (!res.ok) setError(reasonText(res.reason))
     void load()
@@ -103,7 +103,7 @@ function SquadTab() {
       <div className="table-wrap">
       <table className="table">
         <thead>
-          <tr><th>Nr.</th><th>Naam</th><th>Positie</th><th>Actief</th><th></th></tr>
+          <tr><th>Nr.</th><th>Naam</th><th className="center">Actief</th><th className="center" title="Leenspeler van een ander team">Leen</th><th></th></tr>
         </thead>
         <tbody>
           {players.map((p) => (
@@ -142,21 +142,21 @@ function SquadTab() {
                   }}
                 />
               </td>
-              <td>
-                <select
-                  value={p.position ?? ''}
-                  onChange={(e) => save({ ...p, position: (e.target.value || null) as Player['position'] })}
-                >
-                  <option value="">–</option>
-                  <option value="keeper">Keeper</option>
-                  <option value="verdediger">Verdediger</option>
-                  <option value="middenvelder">Middenvelder</option>
-                  <option value="aanvaller">Aanvaller</option>
-                  <option value="leenspeler">Leenspeler</option>
-                </select>
+              <td className="center">
+                <input
+                  type="checkbox"
+                  checked={p.active}
+                  onChange={(e) => save({ ...p, active: e.target.checked })}
+                  aria-label={`${p.name} actief`}
+                />
               </td>
-              <td>
-                <input type="checkbox" checked={p.active} onChange={(e) => save({ ...p, active: e.target.checked })} />
+              <td className="center">
+                <input
+                  type="checkbox"
+                  checked={p.is_guest}
+                  onChange={(e) => save({ ...p, is_guest: e.target.checked })}
+                  aria-label={`${p.name} leenspeler`}
+                />
               </td>
               <td>
                 <button className="btn-icon" onClick={() => remove(p)} title="Verwijderen" aria-label={`${p.name} verwijderen`}>
@@ -168,7 +168,7 @@ function SquadTab() {
         </tbody>
       </table>
       </div>
-      <p className="muted small">Rugnummer of naam aanpassen: tik erop, wijzig en tik ernaast. Spelers die vertrekken: vinkje "actief" uit, zo blijven hun statistieken bewaard. Verwijderen kan alleen bij
+      <p className="muted small">Rugnummer of naam aanpassen: tik erop, wijzig en tik ernaast. "Leen" = leenspeler van een ander team. Spelers die vertrekken: vinkje "actief" uit, zo blijven hun statistieken bewaard. Verwijderen kan alleen bij
         spelers zonder koppeling, aanmeldingen of statistieken (bijv. per ongeluk dubbel aangemaakt).</p>
     </div>
   )

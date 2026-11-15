@@ -74,6 +74,10 @@ hoeveel dagen voor een wedstrijd ✓ opengaat (bijv. 14). ✕ en "misschien" kun
 Draai `supabase/008_leenspeler.sql` (direct `COMMIT;`). Daarna kun je in **Beheer → Selectie** de positie
 "Leenspeler" kiezen. Leenspelers krijgen een "Leen"-label en staan niet bij "Nog niet gereageerd".
 
+### 12. Leenspeler als vinkje
+Draai `supabase/009_is_guest.sql` (eerst `ROLLBACK;`, dan `COMMIT;`). Positie vervalt; in **Beheer → Selectie**
+staan nu alleen de vinkjes "Actief" en "Leen".
+
 ## Rollen
 
 | Rol | Kan |

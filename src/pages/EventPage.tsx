@@ -102,10 +102,10 @@ export default function EventPage() {
     { key: 'misschien', title: 'Misschien', list: players.filter((p) => statusOf(p.id) === 'misschien') },
     { key: 'afwezig', title: 'Kan niet', list: players.filter((p) => statusOf(p.id) === 'afwezig') },
     // Leenspelers horen niet bij de vaste groep: alleen tonen als ze zelf gereageerd hebben
-    { key: 'onbekend', title: 'Nog niet gereageerd', list: players.filter((p) => !statusOf(p.id) && p.position !== 'leenspeler') },
+    { key: 'onbekend', title: 'Nog niet gereageerd', list: players.filter((p) => !statusOf(p.id) && !p.is_guest) },
     // Alleen voor staf: leenspelers die je kunt oproepen (nog geen reactie)
     ...(staff
-      ? [{ key: 'leen' as const, title: 'Leenspelers (oproepen)', list: players.filter((p) => !statusOf(p.id) && p.position === 'leenspeler') }]
+      ? [{ key: 'leen' as const, title: 'Leenspelers (oproepen)', list: players.filter((p) => !statusOf(p.id) && p.is_guest) }]
       : []),
   ]
 

@@ -16,8 +16,8 @@ export type Player = {
   id: string
   name: string
   shirt_number: number | null
-  // 'leenspeler' = speler van een ander team die af en toe meedoet
-  position: 'keeper' | 'verdediger' | 'middenvelder' | 'aanvaller' | 'leenspeler' | null
+  position: string | null // niet meer gebruikt (kolom blijft bestaan in de database)
+  is_guest: boolean // leenspeler van een ander team die af en toe meedoet
   active: boolean
 }
 
