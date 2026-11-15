@@ -38,6 +38,8 @@ const REASONS: Record<string, string> = {
   sync_failed: 'Ophalen bij Sportlink mislukt. Kijk in het logboek hieronder.',
   not_a_match: 'Statistieken kun je alleen bij wedstrijden invullen.',
   match_not_started: 'Deze wedstrijd is nog niet begonnen.',
+  player_linked: 'Deze speler is gekoppeld aan een account. Ontkoppel eerst bij Gebruikers.',
+  player_has_history: 'Deze speler heeft al aanmeldingen of statistieken. Zet hem op niet actief in plaats van verwijderen.',
   too_many_goals: 'Meer doelpunten of assists ingevuld dan de uitslag toelaat.',
 }
 

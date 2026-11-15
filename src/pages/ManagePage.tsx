@@ -37,6 +37,7 @@ function SquadTab() {
   const [name, setName] = useState('')
   const [shirt, setShirt] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
 
   const load = useCallback(async () => {
     const { data } = await supabase.from('players').select('*').order('active', { ascending: false }).order('name')
@@ -50,14 +51,27 @@ function SquadTab() {
   async function add(e: FormEvent) {
     e.preventDefault()
     setError(null)
+    // Voorkom per ongeluk dubbele spelers
+    const exists = players.some((p) => p.name.trim().toLowerCase() === name.trim().toLowerCase())
+    if (exists && !confirm(`Er staat al een speler "${name.trim()}" in de selectie. Toch nog een toevoegen?`)) return
+    setBusy(true)
     const res = await rpc('upsert_player', {
       p_id: null,
       p_name: name,
       p_shirt_number: shirt ? Number(shirt) : null,
     })
+    setBusy(false)
     if (!res.ok) return setError(reasonText(res.reason))
     setName('')
     setShirt('')
+    void load()
+  }
+
+  async function remove(p: Player) {
+    if (!confirm(`Speler "${p.name}" verwijderen?`)) return
+    setError(null)
+    const res = await rpc('delete_player', { p_id: p.id })
+    if (!res.ok) setError(reasonText(res.reason))
     void load()
   }
 
@@ -79,13 +93,13 @@ function SquadTab() {
       <form className="inline-form" onSubmit={add}>
         <input placeholder="Naam speler" value={name} onChange={(e) => setName(e.target.value)} required maxLength={40} />
         <input placeholder="Nr." type="number" min={1} max={99} value={shirt} onChange={(e) => setShirt(e.target.value)} className="input-narrow" />
-        <button className="btn btn-primary btn-small">Toevoegen</button>
+        <button className="btn btn-primary btn-small" disabled={busy}>Toevoegen</button>
       </form>
       {error && <p className="error">{error}</p>}
 
       <table className="table">
         <thead>
-          <tr><th>Nr.</th><th>Naam</th><th>Positie</th><th>Actief</th></tr>
+          <tr><th>Nr.</th><th>Naam</th><th>Positie</th><th>Actief</th><th></th></tr>
         </thead>
         <tbody>
           {players.map((p) => (
@@ -107,11 +121,17 @@ function SquadTab() {
               <td>
                 <input type="checkbox" checked={p.active} onChange={(e) => save({ ...p, active: e.target.checked })} />
               </td>
+              <td>
+                <button className="btn-icon" onClick={() => remove(p)} title="Verwijderen" aria-label={`${p.name} verwijderen`}>
+                  🗑️
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
-      <p className="muted small">Spelers die vertrekken: vinkje "actief" uit. Zo blijven hun statistieken bewaard.</p>
+      <p className="muted small">Spelers die vertrekken: vinkje "actief" uit, zo blijven hun statistieken bewaard. Verwijderen kan alleen bij
+        spelers zonder koppeling, aanmeldingen of statistieken (bijv. per ongeluk dubbel aangemaakt).</p>
     </div>
   )
 }
@@ -249,6 +269,7 @@ function UsersTab() {
   const [users, setUsers] = useState<Profile[]>([])
   const [players, setPlayers] = useState<Player[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
 
   const load = useCallback(async () => {
     const [u, p] = await Promise.all([
@@ -273,15 +294,27 @@ function UsersTab() {
   // Koppel een account aan een speler. Met "__new__" maken we eerst een speler
   // aan met de naam van het account, zodat dat in één stap gaat.
   async function linkPlayer(u: Profile, value: string) {
+    if (busy) return // voorkomt dubbel aanmaken bij snel twee keer kiezen
+    setBusy(true)
     setError(null)
     let playerId: string | null = value || null
     if (value === '__new__') {
-      const created = await rpc('upsert_player', { p_id: null, p_name: u.display_name })
-      if (!created.ok) {
-        setError(reasonText(created.reason))
-        return
+      // Staat er al een ongekoppelde speler met deze naam? Dan die gebruiken i.p.v. een dubbele maken
+      const linked = new Set(users.map((x) => x.player_id).filter(Boolean))
+      const same = players.find(
+        (p) => !linked.has(p.id) && p.name.trim().toLowerCase() === u.display_name.trim().toLowerCase(),
+      )
+      if (same) {
+        playerId = same.id
+      } else {
+        const created = await rpc('upsert_player', { p_id: null, p_name: u.display_name })
+        if (!created.ok) {
+          setError(reasonText(created.reason))
+          setBusy(false)
+          return
+        }
+        playerId = created.id as string
       }
-      playerId = created.id as string
     }
     const res = await rpc('admin_link_player', { p_user_id: u.id, p_player_id: playerId })
     if (!res.ok) {
@@ -291,7 +324,8 @@ function UsersTab() {
       const promoted = await rpc('admin_set_role', { p_user_id: u.id, p_role: 'speler' })
       if (!promoted.ok) setError(reasonText(promoted.reason))
     }
-    void load()
+    await load()
+    setBusy(false)
   }
 
   return (
@@ -328,6 +362,7 @@ function UsersTab() {
                   <td>
                     <select
                       value={u.player_id ?? ''}
+                      disabled={busy}
                       onChange={(e) => void linkPlayer(u, e.target.value)}
                     >
                       <option value="">– geen –</option>

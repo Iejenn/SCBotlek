@@ -54,6 +54,10 @@ Klopt het? Verander de laatste regel in `COMMIT;`.
 ### 6. Statistieken (fase 2)
 Draai `supabase/003_match_stats.sql` in de SQL Editor (eindigt direct op `COMMIT;`, voegt alleen een functie toe).
 
+### 7. Speler verwijderen
+Draai `supabase/004_delete_player.sql` (direct `COMMIT;`). Daarna staat er een 🗑️-knop in **Beheer → Selectie**.
+Werkt alleen bij spelers zonder koppeling, aanmeldingen of statistieken.
+
 ## Rollen
 
 | Rol | Kan |
