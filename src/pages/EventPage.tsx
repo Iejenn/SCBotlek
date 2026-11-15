@@ -167,6 +167,7 @@ export default function EventPage() {
           eventId={ev.id}
           players={editorPlayers}
           presentIds={new Set(attendance.filter((a) => a.status === 'aanwezig').map((a) => a.player_id))}
+          waitlistIds={new Set(attendance.filter((a) => a.status === 'wachtlijst').map((a) => a.player_id))}
           onAttendanceChanged={() => void reloadAttendance()}
           stats={stats}
           scoreUs={ev.score_us}

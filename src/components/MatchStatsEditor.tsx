@@ -10,6 +10,7 @@ type Props = {
   eventId: string
   players: Player[] // actieve spelers + wie al statistieken heeft
   presentIds: Set<string> // spelers met ✓ (aanwezig) bij deze wedstrijd
+  waitlistIds: Set<string> // spelers op de wachtlijst (speelden soms toch mee)
   onAttendanceChanged?: () => void // na "speler toevoegen" de aanwezigheid opnieuw laden
   stats: MatchStat[]
   scoreUs: number | null
@@ -18,7 +19,7 @@ type Props = {
 
 // Invoerscherm voor aanvoerders: doelpunten, assists en kaarten per speler.
 // Slaat alles in één keer op via de save_match_stats RPC.
-export default function MatchStatsEditor({ eventId, players, presentIds, stats, scoreUs, onSaved, onAttendanceChanged }: Props) {
+export default function MatchStatsEditor({ eventId, players, presentIds, waitlistIds, stats, scoreUs, onSaved, onAttendanceChanged }: Props) {
   const [rows, setRows] = useState<Record<string, Row>>(() =>
     Object.fromEntries(stats.map((s) => [s.player_id, { ...s }])),
   )
@@ -40,7 +41,9 @@ export default function MatchStatsEditor({ eventId, players, presentIds, stats, 
     return !!r && (r.goals > 0 || r.assists > 0 || r.yellow_cards > 0 || r.red_card)
   }
   // Alleen wie er was: aanwezig, al iets ingevuld, of hier toegevoegd
-  const visible = players.filter((p) => presentIds.has(p.id) || hasData(p.id) || added.has(p.id))
+  const visible = players.filter(
+    (p) => presentIds.has(p.id) || waitlistIds.has(p.id) || hasData(p.id) || added.has(p.id),
+  )
   const addable = players.filter((p) => !visible.includes(p))
 
   // Speler toevoegen = hij was er dus ook: meteen op aanwezig zetten
@@ -63,6 +66,14 @@ export default function MatchStatsEditor({ eventId, players, presentIds, stats, 
     const res = await rpc('save_match_stats', { p_event_id: eventId, p_stats: payload })
     setBusy(false)
     if (!res.ok) return setError(reasonText(res.reason))
+    // Wachtlijstspeler met statistieken heeft dus meegespeeld: op aanwezig zetten
+    const played = payload.filter(
+      (r) => waitlistIds.has(r.player_id) && (r.goals || r.assists || r.yellow_cards || r.red_card),
+    )
+    for (const r of played) {
+      await rpc('set_attendance', { p_event_id: eventId, p_status: 'aanwezig', p_player_id: r.player_id })
+    }
+    if (played.length) onAttendanceChanged?.()
     setMessage('Opgeslagen.')
     onSaved(
       payload
@@ -94,8 +105,9 @@ export default function MatchStatsEditor({ eventId, players, presentIds, stats, 
         {scoreUs !== null && totalGoals < scoreUs && <> · rest = eigen doelpunten tegenstander of onbekend</>}
       </p>
       <p className="muted small">
-        Alleen spelers die er waren ({visible.length}). Speelde iemand mee zonder aanmelding? Voeg hem hieronder toe,
-        dan staat hij meteen ook als aanwezig.
+        Spelers die er waren of op de wachtlijst stonden ({visible.length}). Speelde iemand mee zonder aanmelding? Voeg
+        hem hieronder toe, dan staat hij meteen ook als aanwezig. Een wachtlijstspeler met statistieken wordt bij
+        opslaan ook op aanwezig gezet.
       </p>
       <div className="table-wrap">
         <table className="table stats-input">
@@ -115,6 +127,7 @@ export default function MatchStatsEditor({ eventId, players, presentIds, stats, 
                 <tr key={p.id}>
                   <td>
                     <PlayerName player={p} />
+                    {waitlistIds.has(p.id) && <span className="badge badge-guest">wachtlijst</span>}
                   </td>
                   <td>{num(p.id, 'goals', r.goals)}</td>
                   <td>{num(p.id, 'assists', r.assists)}</td>

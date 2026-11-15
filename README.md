@@ -78,6 +78,10 @@ Draai `supabase/008_leenspeler.sql` (direct `COMMIT;`). Daarna kun je in **Behee
 Draai `supabase/009_is_guest.sql` (eerst `ROLLBACK;`, dan `COMMIT;`). Positie vervalt; in **Beheer → Selectie**
 staan nu alleen de vinkjes "Actief" en "Leen".
 
+### 13. Wachtlijst na afloop
+Draai `supabase/010_waitlist_after_match.sql` (direct `COMMIT;`). De limiet geldt alleen vóór de wedstrijd;
+achteraf kan de aanvoerder iedereen op aanwezig zetten en schuift de wachtlijst niet meer vanzelf door.
+
 ## Rollen
 
 | Rol | Kan |
