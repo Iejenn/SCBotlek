@@ -4,6 +4,7 @@ import { reasonText, rpc, supabase } from '../lib/supabase'
 import { formatDay, formatTime } from '../lib/format'
 import { refreshTeamSettings } from '../lib/teamSettings'
 import { isPending, normName, usePendingCount } from '../lib/pendingUsers'
+import RolesHelp from '../components/RolesHelp'
 import { ROLE_LABELS, type Player, type Profile, type Role } from '../lib/types'
 
 type Tab = 'selectie' | 'trainingen' | 'sportlink' | 'instellingen' | 'gebruikers'
@@ -585,6 +586,7 @@ function UsersTab() {
         </table>
       </div>
     </div>
+    <RolesHelp />
     </>
   )
 }

@@ -86,10 +86,12 @@ achteraf kan de aanvoerder iedereen op aanwezig zetten en schuift de wachtlijst 
 
 | Rol | Kan |
 |---|---|
-| Supporter | Agenda en uitslagen bekijken (standaard na registratie) |
-| Speler | + aanwezigheid zien en zichzelf aan/afmelden (account moet gekoppeld zijn aan een speler in de selectie) |
-| Aanvoerder | + wedstrijden/trainingen en selectie beheren, aanwezigheid voor anderen invullen |
-| Beheerder | + rollen toewijzen, gebruikers blokkeren, accounts aan spelers koppelen |
+| Supporter | Standaard na registratie. Agenda, uitslagen, wedstrijdverslagen en statistieken (stand, topscorers) bekijken. Geen aanmeldingen, ziet niet wie er komt |
+| Speler | + zelf aan/afmelden (✓ ? ✕, wachtlijst), zien wie er komt, aanwezigheidsstatistieken. Account moet gekoppeld zijn aan een speler |
+| Aanvoerder | + aanwezigheid voor anderen invullen (ook achteraf), statistieken invullen, wedstrijden/trainingen, selectie, instellingen, Sportlink |
+| Beheerder | + rollen toewijzen, accounts koppelen, blokkeren (Beheer → Gebruikers) |
+
+Niemand kan zijn eigen rol wijzigen of zichzelf blokkeren. Een geblokkeerd account ziet niets. De uitleg staat ook in de app onder Beheer → Gebruikers.
 
 Alle wijzigingen lopen via database-functies (RPC's) die de rol controleren; de app kan zelf niets direct schrijven.
 

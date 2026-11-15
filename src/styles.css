@@ -280,3 +280,14 @@ label.check-row { flex-direction: row; align-items: center; gap: 10px; }
 .pending-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 /* Tabbladen: doorlopen op een tweede regel i.p.v. buiten beeld vallen */
 .tabs { flex-wrap: wrap; overflow-x: visible; }
+
+/* ---------- uitleg rollen ---------- */
+.roles-help summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; }
+.roles-help summary::-webkit-details-marker { display: none; }
+.roles-help summary::before { content: '▸'; color: var(--muted); transition: transform 0.15s; }
+.roles-help[open] summary::before { transform: rotate(90deg); }
+.roles-help summary h2 { margin: 0; }
+.roles-intro { padding-left: 18px; margin: 14px 0; font-size: 0.9rem; display: grid; gap: 4px; }
+.roles-table td:first-child { min-width: 160px; font-size: 0.85rem; }
+.role-yes { color: var(--win); font-weight: 700; }
+.role-no { color: var(--muted); }
