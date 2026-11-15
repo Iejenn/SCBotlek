@@ -104,7 +104,10 @@ export default function EventPage() {
         {staff && (
           <div className="actions">
             <Link to={`/activiteit/${ev.id}/bewerken`} className="btn btn-small">Bewerken</Link>
-            <button className="btn btn-small btn-danger" onClick={handleDelete}>Verwijderen</button>
+            {/* Wedstrijden uit Sportlink komen bij de volgende sync terug, dus niet verwijderbaar */}
+            {ev.source !== 'voetbalnl' && (
+              <button className="btn btn-small btn-danger" onClick={handleDelete}>Verwijderen</button>
+            )}
           </div>
         )}
         {error && <p className="error">{error}</p>}

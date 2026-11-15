@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '../lib/auth'
 import { reasonText, rpc, supabase } from '../lib/supabase'
+import { formatDay, formatTime } from '../lib/format'
 import { ROLE_LABELS, type Player, type Profile, type Role } from '../lib/types'
 
-type Tab = 'selectie' | 'trainingen' | 'gebruikers'
+type Tab = 'selectie' | 'trainingen' | 'sportlink' | 'gebruikers'
 
 // Beheer: selectie (staf), trainingsreeks (staf), gebruikers & rollen (beheerder)
 export default function ManagePage() {
@@ -17,12 +18,14 @@ export default function ManagePage() {
       <div className="tabs">
         <button className={tab === 'selectie' ? 'is-active' : ''} onClick={() => setTab('selectie')}>Selectie</button>
         <button className={tab === 'trainingen' ? 'is-active' : ''} onClick={() => setTab('trainingen')}>Trainingen</button>
+        <button className={tab === 'sportlink' ? 'is-active' : ''} onClick={() => setTab('sportlink')}>Sportlink</button>
         {admin && (
           <button className={tab === 'gebruikers' ? 'is-active' : ''} onClick={() => setTab('gebruikers')}>Gebruikers</button>
         )}
       </div>
       {tab === 'selectie' && <SquadTab />}
       {tab === 'trainingen' && <TrainingSeriesTab />}
+      {tab === 'sportlink' && <SyncTab />}
       {tab === 'gebruikers' && admin && <UsersTab />}
     </div>
   )
@@ -171,6 +174,72 @@ function TrainingSeriesTab() {
       {error && <p className="error">{error}</p>}
       <button className="btn btn-primary">Inplannen</button>
     </form>
+  )
+}
+
+// ---------------------------------------------------------------- Sportlink
+type SyncRun = { id: number; ran_at: string; ok: boolean; imported: number | null; message: string | null }
+
+// Wedstrijden komen elke 3 uur automatisch binnen; hier zie je het logboek
+// en kun je handmatig bijwerken (bijv. direct na een verplaatste wedstrijd).
+function SyncTab() {
+  const [runs, setRuns] = useState<SyncRun[]>([])
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    const { data } = await supabase.from('sync_runs').select('*').order('ran_at', { ascending: false }).limit(10)
+    setRuns((data as SyncRun[] | null) ?? [])
+  }, [])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  async function syncNow() {
+    setBusy(true)
+    setMessage(null)
+    setError(null)
+    const res = await rpc('sync_now', {})
+    setBusy(false)
+    if (res.ok) setMessage(`Bijgewerkt: ${res.changed as number} wedstrijd(en) gewijzigd.`)
+    else setError(reasonText(res.reason))
+    void load()
+  }
+
+  return (
+    <div className="card">
+      <p className="muted">
+        Het programma en de uitslagen van SC Botlek 7 komen automatisch uit Sportlink (dezelfde bron als voetbal.nl),
+        elke 3 uur.
+      </p>
+      <button className="btn btn-primary btn-small" onClick={syncNow} disabled={busy}>
+        {busy ? 'Bezig…' : 'Nu bijwerken'}
+      </button>
+      {message && <p className="success">{message}</p>}
+      {error && <p className="error">{error}</p>}
+
+      <h3>Logboek</h3>
+      {runs.length === 0 ? (
+        <p className="muted small">Nog geen runs.</p>
+      ) : (
+        <table className="table">
+          <tbody>
+            {runs.map((r) => (
+              <tr key={r.id}>
+                <td>{formatDay(r.ran_at)} {formatTime(r.ran_at)}</td>
+                <td>{r.ok ? '✓' : '✕'}</td>
+                <td className="small">
+                  {r.ok ? `${r.imported ?? 0} gewijzigd · ` : ''}
+                  {r.message}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
   )
 }
 

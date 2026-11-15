@@ -33,6 +33,17 @@ UPDATE public.profiles SET role = 'beheerder' WHERE username = 'jouwnaam';
 ```
 Vanaf dan doe je alles in de app via **Beheer → Gebruikers**.
 
+### 5. Automatische wedstrijden uit Sportlink
+Draai `supabase/002_sportlink_sync.sql` in de SQL Editor (ook weer eerst met `ROLLBACK;`).
+De proefrun haalt echt de data op en toont onderaan de lijst met wedstrijden die erin zouden komen.
+Klopt het? Verander de laatste regel in `COMMIT;`.
+
+- Bron: Sportlink Club.Dataservice (dezelfde data als voetbal.nl), team SC Botlek 7 (teamcode `119436`).
+- Draait elke 3 uur via `pg_cron`; staf kan ook op **Beheer → Sportlink → Nu bijwerken** drukken.
+- Sportlink is leidend voor datum, tegenstander, locatie, status en uitslag. Verzameltijd en opmerkingen vul je zelf in.
+- De `client_id` is de sleutel van de club (staat openbaar op scbotlek.nl). Wordt die vernieuwd, pas dan de
+  constante `c_client` aan in de functie `sync_sportlink` en draai het bestand opnieuw.
+
 ## Rollen
 
 | Rol | Kan |
@@ -55,4 +66,5 @@ WHERE email = 'gebruikersnaam@users.scbotlek.app';
 ## Planning
 - [x] Fase 1: agenda, trainingsreeksen, aan/afmelden, rollen
 - [ ] Fase 2: uitslag + doelpunten/assists/kaarten invoeren, statistiekenpagina (topscorer, aanwezigheid %)
-- [ ] Koppeling voetbal.nl (automatisch wedstrijdschema)
+- [x] Koppeling Sportlink (automatisch wedstrijdschema + uitslagen)
+- [ ] Competitiestand tonen

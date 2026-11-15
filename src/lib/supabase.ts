@@ -34,6 +34,8 @@ const REASONS: Record<string, string> = {
   user_not_found: 'Gebruiker niet gevonden.',
   player_not_found: 'Speler niet gevonden.',
   player_already_linked: 'Deze speler is al aan een ander account gekoppeld.',
+  too_soon: 'Er is net al bijgewerkt; probeer het over een paar minuten opnieuw.',
+  sync_failed: 'Ophalen bij Sportlink mislukt. Kijk in het logboek hieronder.',
 }
 
 export function reasonText(reason: unknown): string {

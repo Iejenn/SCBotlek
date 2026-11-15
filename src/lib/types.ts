@@ -36,6 +36,7 @@ export type TeamEvent = {
   score_them: number | null
   status: EventStatus
   notes: string | null
+  source: 'handmatig' | 'voetbalnl' // 'voetbalnl' = automatisch uit Sportlink
 }
 
 export type AttendanceStatus = 'aanwezig' | 'afwezig' | 'misschien'

@@ -21,6 +21,8 @@ export default function EventFormPage() {
   const [scoreUs, setScoreUs] = useState('')
   const [scoreThem, setScoreThem] = useState('')
   const [notes, setNotes] = useState('')
+  // Wedstrijd uit Sportlink: die velden worden bij elke sync overschreven, dus op slot
+  const [synced, setSynced] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -41,6 +43,7 @@ export default function EventFormPage() {
       setScoreUs(ev.score_us?.toString() ?? '')
       setScoreThem(ev.score_them?.toString() ?? '')
       setNotes(ev.notes ?? '')
+      setSynced(ev.source === 'voetbalnl')
     })
   }, [id])
 
@@ -78,15 +81,24 @@ export default function EventFormPage() {
       <form className="card form" onSubmit={handleSubmit}>
         <h1>{editing ? 'Activiteit bewerken' : 'Nieuwe activiteit'}</h1>
 
+        {synced && (
+          <p className="notice">
+            Deze wedstrijd komt automatisch uit Sportlink. Datum, tegenstander, locatie, status en uitslag
+            worden bijgewerkt bij elke sync. Verzameltijd en opmerkingen kun je zelf invullen.
+          </p>
+        )}
+
+        <fieldset disabled={synced} className="plain">
         <div className="segmented">
           <button type="button" className={kind === 'wedstrijd' ? 'is-active' : ''} onClick={() => setKind('wedstrijd')}>Wedstrijd</button>
           <button type="button" className={kind === 'training' ? 'is-active' : ''} onClick={() => setKind('training')}>Training</button>
         </div>
+        </fieldset>
 
         <div className="grid-2">
           <label>
             Aanvang
-            <input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} required />
+            <input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} required disabled={synced} />
           </label>
           <label>
             Verzamelen (optioneel)
@@ -94,6 +106,7 @@ export default function EventFormPage() {
           </label>
         </div>
 
+        <fieldset disabled={synced} className="plain form">
         {kind === 'wedstrijd' && (
           <>
             <label>
@@ -146,6 +159,8 @@ export default function EventFormPage() {
             </label>
           </div>
         )}
+
+        </fieldset>
 
         <label>
           Opmerkingen

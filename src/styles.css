@@ -200,3 +200,7 @@ input[type='checkbox'] { width: 18px; height: 18px; }
 .table td { padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .table select { padding: 5px 8px; }
 .is-inactive { opacity: 0.5; }
+
+/* fieldset zonder rand, alleen om velden in één keer op slot te zetten */
+fieldset.plain { border: 0; padding: 0; margin: 0; min-width: 0; }
+fieldset:disabled input, fieldset:disabled select, input:disabled { opacity: 0.6; }
