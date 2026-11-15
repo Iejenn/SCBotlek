@@ -11,6 +11,7 @@ import AttendanceButtons from '../components/AttendanceButtons'
 import { EventTitle, Score } from '../components/EventBits'
 import MatchStatsEditor from '../components/MatchStatsEditor'
 import { signupOpensAt, useTeamSettings } from '../lib/teamSettings'
+import PlayerName from '../components/PlayerName'
 
 const COMPETITION_LABEL = { competitie: 'Competitie', beker: 'Beker', oefen: 'Oefenwedstrijd' } as const
 
@@ -95,12 +96,17 @@ export default function EventPage() {
     .filter((a) => a.status === 'wachtlijst')
     .sort((a, b) => (a.updated_at ?? '').localeCompare(b.updated_at ?? '') || a.player_id.localeCompare(b.player_id))
     .map((a) => a.player_id)
-  const groups: { key: AttendanceStatus | 'onbekend'; title: string; list: Player[] }[] = [
+  const groups: { key: AttendanceStatus | 'onbekend' | 'leen'; title: string; list: Player[] }[] = [
     { key: 'aanwezig', title: cap !== null ? `Komt · ${comingCount}/${cap}${comingCount >= cap ? ' (vol)' : ''}` : 'Komt', list: players.filter((p) => statusOf(p.id) === 'aanwezig') },
     { key: 'wachtlijst', title: 'Wachtlijst', list: waitOrder.map((pid) => players.find((p) => p.id === pid)).filter((p): p is Player => Boolean(p)) },
     { key: 'misschien', title: 'Misschien', list: players.filter((p) => statusOf(p.id) === 'misschien') },
     { key: 'afwezig', title: 'Kan niet', list: players.filter((p) => statusOf(p.id) === 'afwezig') },
-    { key: 'onbekend', title: 'Nog niet gereageerd', list: players.filter((p) => !statusOf(p.id)) },
+    // Leenspelers horen niet bij de vaste groep: alleen tonen als ze zelf gereageerd hebben
+    { key: 'onbekend', title: 'Nog niet gereageerd', list: players.filter((p) => !statusOf(p.id) && p.position !== 'leenspeler') },
+    // Alleen voor staf: leenspelers die je kunt oproepen (nog geen reactie)
+    ...(staff
+      ? [{ key: 'leen' as const, title: 'Leenspelers (oproepen)', list: players.filter((p) => !statusOf(p.id) && p.position === 'leenspeler') }]
+      : []),
   ]
 
   return (
@@ -160,6 +166,7 @@ export default function EventPage() {
         <MatchStatsEditor
           eventId={ev.id}
           players={editorPlayers}
+          presentIds={new Set(attendance.filter((a) => a.status === 'aanwezig').map((a) => a.player_id))}
           stats={stats}
           scoreUs={ev.score_us}
           onSaved={setStats}
@@ -197,8 +204,7 @@ export default function EventPage() {
                       <li key={p.id}>
                         <span>
                           {g.key === 'wachtlijst' && <span className="wait-pos">#{waitOrder.indexOf(p.id) + 1}</span>}
-                          {p.shirt_number && <span className="shirt">{p.shirt_number}</span>}
-                          {p.name}
+                          <PlayerName player={p} />
                           {note && <span className="muted small"> — {note}</span>}
                         </span>
                         {/* Staf kan voor iedereen invullen, ook achteraf */}

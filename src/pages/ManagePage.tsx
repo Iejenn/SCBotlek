@@ -119,6 +119,7 @@ function SquadTab() {
                   <option value="verdediger">Verdediger</option>
                   <option value="middenvelder">Middenvelder</option>
                   <option value="aanvaller">Aanvaller</option>
+                  <option value="leenspeler">Leenspeler</option>
                 </select>
               </td>
               <td>

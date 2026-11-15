@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { reasonText, rpc } from '../lib/supabase'
 import type { MatchStat, Player } from '../lib/types'
+import PlayerName from './PlayerName'
 
 type Row = { goals: number; assists: number; yellow_cards: number; red_card: boolean }
 const EMPTY: Row = { goals: 0, assists: 0, yellow_cards: 0, red_card: false }
@@ -8,6 +9,7 @@ const EMPTY: Row = { goals: 0, assists: 0, yellow_cards: 0, red_card: false }
 type Props = {
   eventId: string
   players: Player[] // actieve spelers + wie al statistieken heeft
+  presentIds: Set<string> // spelers met ✓ (aanwezig) bij deze wedstrijd
   stats: MatchStat[]
   scoreUs: number | null
   onSaved: (stats: MatchStat[]) => void
@@ -15,19 +17,29 @@ type Props = {
 
 // Invoerscherm voor aanvoerders: doelpunten, assists en kaarten per speler.
 // Slaat alles in één keer op via de save_match_stats RPC.
-export default function MatchStatsEditor({ eventId, players, stats, scoreUs, onSaved }: Props) {
+export default function MatchStatsEditor({ eventId, players, presentIds, stats, scoreUs, onSaved }: Props) {
   const [rows, setRows] = useState<Record<string, Row>>(() =>
     Object.fromEntries(stats.map((s) => [s.player_id, { ...s }])),
   )
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Standaard alleen aanwezigen tonen; is er niemand aangemeld, dan meteen iedereen
+  const [showAll, setShowAll] = useState(presentIds.size === 0)
 
   const get = (id: string) => rows[id] ?? EMPTY
   const update = (id: string, patch: Partial<Row>) => {
     setMessage(null)
     setRows((prev) => ({ ...prev, [id]: { ...get(id), ...patch } }))
   }
+
+  // Zichtbaar: aanwezigen + wie al iets ingevuld heeft (zodat niets "verdwijnt")
+  const hasData = (id: string) => {
+    const r = rows[id]
+    return !!r && (r.goals > 0 || r.assists > 0 || r.yellow_cards > 0 || r.red_card)
+  }
+  const visible = showAll ? players : players.filter((p) => presentIds.has(p.id) || hasData(p.id))
+  const hiddenCount = players.length - visible.length
 
   const totalGoals = Object.values(rows).reduce((sum, r) => sum + r.goals, 0)
   const totalAssists = Object.values(rows).reduce((sum, r) => sum + r.assists, 0)
@@ -70,6 +82,28 @@ export default function MatchStatsEditor({ eventId, players, stats, scoreUs, onS
         {scoreUs !== null && <> van {scoreUs}</>} · assists {totalAssists}
         {scoreUs !== null && totalGoals < scoreUs && <> · rest = eigen doelpunten tegenstander of onbekend</>}
       </p>
+      <p className="muted small">
+        {showAll ? (
+          <>
+            Alle spelers zichtbaar.{' '}
+            {presentIds.size > 0 && (
+              <button type="button" className="btn-link-inline" onClick={() => setShowAll(false)}>
+                Alleen aanwezigen tonen
+              </button>
+            )}
+            {presentIds.size === 0 && 'Niemand had zich aangemeld voor deze wedstrijd.'}
+          </>
+        ) : (
+          <>
+            Alleen spelers die aanwezig waren ({visible.length}).{' '}
+            {hiddenCount > 0 && (
+              <button type="button" className="btn-link-inline" onClick={() => setShowAll(true)}>
+                Iemand mist? Toon alle spelers ({hiddenCount} meer)
+              </button>
+            )}
+          </>
+        )}
+      </p>
       <div className="table-wrap">
         <table className="table stats-input">
           <thead>
@@ -82,13 +116,12 @@ export default function MatchStatsEditor({ eventId, players, stats, scoreUs, onS
             </tr>
           </thead>
           <tbody>
-            {players.map((p) => {
+            {visible.map((p) => {
               const r = get(p.id)
               return (
                 <tr key={p.id}>
                   <td>
-                    {p.shirt_number && <span className="shirt">{p.shirt_number}</span>}
-                    {p.name}
+                    <PlayerName player={p} />
                   </td>
                   <td>{num(p.id, 'goals', r.goals)}</td>
                   <td>{num(p.id, 'assists', r.assists)}</td>

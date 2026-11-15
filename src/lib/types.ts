@@ -16,7 +16,8 @@ export type Player = {
   id: string
   name: string
   shirt_number: number | null
-  position: 'keeper' | 'verdediger' | 'middenvelder' | 'aanvaller' | null
+  // 'leenspeler' = speler van een ander team die af en toe meedoet
+  position: 'keeper' | 'verdediger' | 'middenvelder' | 'aanvaller' | 'leenspeler' | null
   active: boolean
 }
 

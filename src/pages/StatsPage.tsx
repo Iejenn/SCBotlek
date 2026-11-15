@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { seasonLabel, seasonOf, seasonRange, teamNameBySeason } from '../lib/season'
 import Standings from '../components/Standings'
 import { isTeam, type Attendance, type MatchStat, type Player, type TeamEvent } from '../lib/types'
+import PlayerName from '../components/PlayerName'
 
 type CompFilter = 'alles' | 'competitie' | 'beker'
 type SortKey = 'goals' | 'assists' | 'ga' | 'yellow' | 'red'
@@ -269,8 +270,7 @@ export default function StatsPage() {
                   {sorted.map((r) => (
                     <tr key={r.player.id} className={r.player.active ? '' : 'is-inactive'}>
                       <td>
-                        {r.player.shirt_number && <span className="shirt">{r.player.shirt_number}</span>}
-                        {r.player.name}
+                        <PlayerName player={r.player} />
                       </td>
                       <td className="num strong">{r.goals || '–'}</td>
                       <td className="num">{r.assists || '–'}</td>
@@ -333,8 +333,7 @@ export default function StatsPage() {
                           {attRows.map((r) => (
                             <tr key={r.player.id} className={r.player.active ? '' : 'is-inactive'}>
                               <td>
-                                {r.player.shirt_number && <span className="shirt">{r.player.shirt_number}</span>}
-                                {r.player.name}
+                                <PlayerName player={r.player} />
                               </td>
                               <td><Meter n={isMatch ? r.matchesPresent : r.trainingsPresent} total={total} /></td>
                             </tr>

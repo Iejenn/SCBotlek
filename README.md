@@ -70,6 +70,10 @@ Draai `supabase/006_waitlist.sql` (eerst met `ROLLBACK;`, dan `COMMIT;`). Stel d
 Draai `supabase/007_signup_window.sql` (eerst `ROLLBACK;`, dan `COMMIT;`). In **Beheer → Instellingen** stel je in
 hoeveel dagen voor een wedstrijd ✓ opengaat (bijv. 14). ✕ en "misschien" kunnen altijd.
 
+### 11. Leenspelers
+Draai `supabase/008_leenspeler.sql` (direct `COMMIT;`). Daarna kun je in **Beheer → Selectie** de positie
+"Leenspeler" kiezen. Leenspelers krijgen een "Leen"-label en staan niet bij "Nog niet gereageerd".
+
 ## Rollen
 
 | Rol | Kan |
