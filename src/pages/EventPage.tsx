@@ -10,6 +10,7 @@ import {
 import AttendanceButtons from '../components/AttendanceButtons'
 import { EventTitle, Score } from '../components/EventBits'
 import MatchStatsEditor from '../components/MatchStatsEditor'
+import { useMaxMatchPlayers } from '../lib/teamSettings'
 
 const COMPETITION_LABEL = { competitie: 'Competitie', beker: 'Beker', oefen: 'Oefenwedstrijd' } as const
 
@@ -39,7 +40,7 @@ export default function EventPage() {
       let a: Attendance[] = []
       // Aanwezigheid alleen voor het team (RLS laat supporters toch niets zien)
       if (team) {
-        const { data } = await supabase.from('attendance').select('event_id, player_id, status, note').eq('event_id', id!)
+        const { data } = await supabase.from('attendance').select('event_id, player_id, status, note, updated_at').eq('event_id', id!)
         a = (data as Attendance[] | null) ?? []
       }
       if (!cancelled) {
@@ -56,11 +57,15 @@ export default function EventPage() {
     }
   }, [id, team])
 
-  function setStatus(playerId: string, status: AttendanceStatus) {
-    setAttendance((prev) => [
-      ...prev.filter((x) => x.player_id !== playerId),
-      { event_id: id!, player_id: playerId, status, note: null },
-    ])
+  const maxPlayers = useMaxMatchPlayers()
+
+  // Na een wijziging alles opnieuw ophalen: door de wachtlijst kunnen ook anderen verschoven zijn
+  async function reloadAttendance() {
+    const { data } = await supabase
+      .from('attendance')
+      .select('event_id, player_id, status, note, updated_at')
+      .eq('event_id', id!)
+    setAttendance((data as Attendance[] | null) ?? [])
   }
 
   async function handleDelete() {
@@ -83,8 +88,16 @@ export default function EventPage() {
   const assisters = stats.filter((s) => s.assists > 0).sort((a, b) => b.assists - a.assists)
   const carded = stats.filter((s) => s.yellow_cards > 0 || s.red_card)
   const statusOf = (pid: string) => attendance.find((a) => a.player_id === pid)?.status
+  const cap = ev.kind === 'wedstrijd' ? maxPlayers : null
+  const comingCount = attendance.filter((a) => a.status === 'aanwezig').length
+  // Wachtlijst op volgorde van aanmelden
+  const waitOrder = attendance
+    .filter((a) => a.status === 'wachtlijst')
+    .sort((a, b) => (a.updated_at ?? '').localeCompare(b.updated_at ?? '') || a.player_id.localeCompare(b.player_id))
+    .map((a) => a.player_id)
   const groups: { key: AttendanceStatus | 'onbekend'; title: string; list: Player[] }[] = [
-    { key: 'aanwezig', title: 'Komt', list: players.filter((p) => statusOf(p.id) === 'aanwezig') },
+    { key: 'aanwezig', title: cap !== null ? `Komt · ${comingCount}/${cap}${comingCount >= cap ? ' (vol)' : ''}` : 'Komt', list: players.filter((p) => statusOf(p.id) === 'aanwezig') },
+    { key: 'wachtlijst', title: 'Wachtlijst', list: waitOrder.map((pid) => players.find((p) => p.id === pid)).filter((p): p is Player => Boolean(p)) },
     { key: 'misschien', title: 'Misschien', list: players.filter((p) => statusOf(p.id) === 'misschien') },
     { key: 'afwezig', title: 'Kan niet', list: players.filter((p) => statusOf(p.id) === 'afwezig') },
     { key: 'onbekend', title: 'Nog niet gereageerd', list: players.filter((p) => !statusOf(p.id)) },
@@ -159,7 +172,7 @@ export default function EventPage() {
           <AttendanceButtons
             eventId={ev.id}
             current={statusOf(profile.player_id)}
-            onChange={(s) => setStatus(profile.player_id!, s)}
+            onChange={() => void reloadAttendance()}
           />
         </div>
       )}
@@ -172,7 +185,9 @@ export default function EventPage() {
             g.list.length === 0 ? null : (
               <div key={g.key} className="att-group">
                 <h3>
-                  {g.title} <span className="muted">({g.list.length})</span>
+                  {g.title}{' '}
+                  {/* bij een limiet staat het aantal al in de titel (12/15) */}
+                  {!(g.key === 'aanwezig' && cap !== null) && <span className="muted">({g.list.length})</span>}
                 </h3>
                 <ul className="att-list">
                   {g.list.map((p) => {
@@ -180,6 +195,7 @@ export default function EventPage() {
                     return (
                       <li key={p.id}>
                         <span>
+                          {g.key === 'wachtlijst' && <span className="wait-pos">#{waitOrder.indexOf(p.id) + 1}</span>}
                           {p.shirt_number && <span className="shirt">{p.shirt_number}</span>}
                           {p.name}
                           {note && <span className="muted small"> — {note}</span>}
@@ -191,7 +207,7 @@ export default function EventPage() {
                             playerId={p.id}
                             current={statusOf(p.id)}
                             compact
-                            onChange={(s) => setStatus(p.id, s)}
+                            onChange={() => void reloadAttendance()}
                           />
                         )}
                       </li>

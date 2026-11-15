@@ -40,13 +40,15 @@ export type TeamEvent = {
   source: 'handmatig' | 'voetbalnl' // 'voetbalnl' = automatisch uit Sportlink
 }
 
-export type AttendanceStatus = 'aanwezig' | 'afwezig' | 'misschien'
+// 'wachtlijst' kiest de server zelf als de wedstrijd vol zit
+export type AttendanceStatus = 'aanwezig' | 'afwezig' | 'misschien' | 'wachtlijst'
 
 export type Attendance = {
   event_id: string
   player_id: string
   status: AttendanceStatus
   note: string | null
+  updated_at?: string // moment van aanmelden; bepaalt de volgorde op de wachtlijst
 }
 
 export const ROLE_LABELS: Record<Role, string> = {

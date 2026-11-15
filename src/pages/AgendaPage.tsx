@@ -4,7 +4,8 @@ import { useAuth } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 import { formatDay, formatTime } from '../lib/format'
 import { seasonLabel, seasonOf, teamNameBySeason } from '../lib/season'
-import { isStaff, isTeam, type Attendance, type AttendanceStatus, type TeamEvent } from '../lib/types'
+import { useMaxMatchPlayers } from '../lib/teamSettings'
+import { isStaff, isTeam, type Attendance, type TeamEvent } from '../lib/types'
 import AttendanceButtons from '../components/AttendanceButtons'
 import { EventTitle, Score } from '../components/EventBits'
 
@@ -19,6 +20,7 @@ export default function AgendaPage() {
 
   const team = isTeam(profile?.role)
   const teamNames = teamNameBySeason(events)
+  const maxPlayers = useMaxMatchPlayers()
   const myPlayerId = profile?.player_id ?? null
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export default function AgendaPage() {
       if (team && list.length) {
         const { data: a } = await supabase
           .from('attendance')
-          .select('event_id, player_id, status, note')
+          .select('event_id, player_id, status, note, updated_at')
           .in('event_id', list.map((e) => e.id))
         att = (a as Attendance[] | null) ?? []
       }
@@ -55,12 +57,13 @@ export default function AgendaPage() {
     }
   }, [tab, team])
 
-  function updateMine(eventId: string, status: AttendanceStatus) {
-    if (!myPlayerId) return
-    setAttendance((prev) => [
-      ...prev.filter((a) => !(a.event_id === eventId && a.player_id === myPlayerId)),
-      { event_id: eventId, player_id: myPlayerId, status, note: null },
-    ])
+  // Na aan-/afmelden opnieuw ophalen: door de wachtlijst kunnen ook anderen verschoven zijn
+  async function refreshEvent(eventId: string) {
+    const { data } = await supabase
+      .from('attendance')
+      .select('event_id, player_id, status, note, updated_at')
+      .eq('event_id', eventId)
+    setAttendance((prev) => [...prev.filter((a) => a.event_id !== eventId), ...((data as Attendance[] | null) ?? [])])
   }
 
   return (
@@ -102,6 +105,9 @@ export default function AgendaPage() {
             const evAtt = attendance.filter((a) => a.event_id === ev.id)
             const mine = evAtt.find((a) => a.player_id === myPlayerId)?.status
             const coming = evAtt.filter((a) => a.status === 'aanwezig').length
+            const waiting = evAtt.filter((a) => a.status === 'wachtlijst').length
+            // Limiet geldt alleen voor wedstrijden
+            const cap = ev.kind === 'wedstrijd' ? maxPlayers : null
             const canRespond =
               team && myPlayerId && tab === 'aankomend' && ev.status !== 'afgelast' && new Date(ev.starts_at) > new Date()
 
@@ -130,10 +136,16 @@ export default function AgendaPage() {
                       )}
                       {ev.location && <span>{ev.location}</span>}
                       {/* bij oude wedstrijden zonder aanmeldingen (bijv. vorig seizoen) geen "0 aanwezig" */}
-                      {team && ev.status !== 'afgelast' && (tab === 'aankomend' || coming > 0) && <span>{coming} aanwezig</span>}
+                      {team && ev.status !== 'afgelast' && (tab === 'aankomend' || coming > 0) && (
+                        <span className={cap !== null && coming >= cap ? 'full' : ''}>
+                          {cap !== null ? `${coming}/${cap}` : coming} aanwezig
+                          {cap !== null && coming >= cap && ' · vol'}
+                          {waiting > 0 && ` · ${waiting} wachtlijst`}
+                        </span>
+                      )}
                     </div>
                     {canRespond && (
-                      <AttendanceButtons eventId={ev.id} current={mine} compact onChange={(s) => updateMine(ev.id, s)} />
+                      <AttendanceButtons eventId={ev.id} current={mine} compact onChange={() => void refreshEvent(ev.id)} />
                     )}
                   </div>
                   {ev.score_us !== null && ev.score_them !== null && <Score ev={ev} />}

@@ -2,9 +2,10 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '../lib/auth'
 import { reasonText, rpc, supabase } from '../lib/supabase'
 import { formatDay, formatTime } from '../lib/format'
+import { refreshTeamSettings } from '../lib/teamSettings'
 import { ROLE_LABELS, type Player, type Profile, type Role } from '../lib/types'
 
-type Tab = 'selectie' | 'trainingen' | 'sportlink' | 'gebruikers'
+type Tab = 'selectie' | 'trainingen' | 'sportlink' | 'instellingen' | 'gebruikers'
 
 // Beheer: selectie (staf), trainingsreeks (staf), gebruikers & rollen (beheerder)
 export default function ManagePage() {
@@ -19,12 +20,14 @@ export default function ManagePage() {
         <button className={tab === 'selectie' ? 'is-active' : ''} onClick={() => setTab('selectie')}>Selectie</button>
         <button className={tab === 'trainingen' ? 'is-active' : ''} onClick={() => setTab('trainingen')}>Trainingen</button>
         <button className={tab === 'sportlink' ? 'is-active' : ''} onClick={() => setTab('sportlink')}>Sportlink</button>
+        <button className={tab === 'instellingen' ? 'is-active' : ''} onClick={() => setTab('instellingen')}>Instellingen</button>
         {admin && (
           <button className={tab === 'gebruikers' ? 'is-active' : ''} onClick={() => setTab('gebruikers')}>Gebruikers</button>
         )}
       </div>
       {tab === 'selectie' && <SquadTab />}
       {tab === 'trainingen' && <TrainingSeriesTab />}
+      {tab === 'instellingen' && <SettingsTab />}
       {tab === 'sportlink' && <SyncTab />}
       {tab === 'gebruikers' && admin && <UsersTab />}
     </div>
@@ -193,6 +196,76 @@ function TrainingSeriesTab() {
       {message && <p className="success">{message}</p>}
       {error && <p className="error">{error}</p>}
       <button className="btn btn-primary">Inplannen</button>
+    </form>
+  )
+}
+
+// ---------------------------------------------------------------- Instellingen
+// Teaminstellingen. Nu: maximaal aantal spelers per wedstrijd (daarna wachtlijst).
+function SettingsTab() {
+  const [limitOn, setLimitOn] = useState(false)
+  const [max, setMax] = useState('15')
+  const [loaded, setLoaded] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    refreshTeamSettings().then((v) => {
+      setLimitOn(v !== null)
+      if (v !== null) setMax(String(v))
+      setLoaded(true)
+    })
+  }, [])
+
+  async function save(e: FormEvent) {
+    e.preventDefault()
+    setBusy(true)
+    setMessage(null)
+    setError(null)
+    const value = limitOn ? Number(max) : null
+    const res = await rpc('set_team_settings', { p_max_match_players: value })
+    setBusy(false)
+    if (!res.ok) return setError(reasonText(res.reason))
+    await refreshTeamSettings()
+    const promoted = (res.promoted as number) ?? 0
+    setMessage(
+      `Opgeslagen.${promoted ? ` ${promoted} speler(s) van de wachtlijst zijn doorgeschoven.` : ''}`,
+    )
+  }
+
+  if (!loaded) return <p className="muted">Laden…</p>
+
+  return (
+    <form className="card form" onSubmit={save}>
+      <h2>Wedstrijden</h2>
+      <label className="check-row">
+        <input type="checkbox" checked={limitOn} onChange={(e) => setLimitOn(e.target.checked)} />
+        Maximaal aantal spelers per wedstrijd
+      </label>
+      {limitOn && (
+        <label>
+          Aantal plekken
+          <input
+            type="number"
+            min={1}
+            max={50}
+            inputMode="numeric"
+            value={max}
+            onChange={(e) => setMax(e.target.value)}
+            className="input-narrow-block"
+            required
+          />
+        </label>
+      )}
+      <p className="muted small">
+        Is een wedstrijd vol, dan komt wie daarna op ✓ drukt op de <b>wachtlijst</b>, op volgorde van aanmelden.
+        Meldt iemand zich af, dan schuift de eerste van de wachtlijst automatisch door. Verlaag je het aantal,
+        dan houdt wie al een plek heeft die. Trainingen hebben geen limiet.
+      </p>
+      {message && <p className="success">{message}</p>}
+      {error && <p className="error">{error}</p>}
+      <button className="btn btn-primary" disabled={busy}>{busy ? 'Opslaan…' : 'Opslaan'}</button>
     </form>
   )
 }

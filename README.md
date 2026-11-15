@@ -62,6 +62,10 @@ Werkt alleen bij spelers zonder koppeling, aanmeldingen of statistieken.
 Draai `supabase/005_team_name.sql` (direct `COMMIT;`). Voegt `events.team_name` toe en vult die via de sync,
 zodat vorig seizoen als "SC Botlek 6" en dit seizoen als "SC Botlek 7" wordt getoond.
 
+### 9. Maximaal aantal spelers + wachtlijst
+Draai `supabase/006_waitlist.sql` (eerst met `ROLLBACK;`, dan `COMMIT;`). Stel daarna in
+**Beheer → Instellingen** het maximum in. Volle wedstrijd = automatisch wachtlijst; bij afmelden schuift de eerste door.
+
 ## Rollen
 
 | Rol | Kan |

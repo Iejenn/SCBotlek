@@ -251,3 +251,13 @@ fieldset:disabled input, fieldset:disabled select, input:disabled { opacity: 0.6
 .meter-text { font-variant-numeric: tabular-nums; font-size: 0.9rem; }
 .meter-track { display: block; height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
 .meter-fill { display: block; height: 100%; border-radius: 3px; background: var(--accent); }
+.att-wachtlijst.is-active { background: #6b6fa8; border-color: #6b6fa8; color: #fff; }
+.notice.small { margin: 8px 0 0; padding: 8px 12px; }
+.event-meta .full { color: var(--red); font-weight: 600; }
+.wait-pos { font-weight: 700; color: var(--muted); margin-right: 8px; font-variant-numeric: tabular-nums; }
+label.check-row { flex-direction: row; align-items: center; gap: 10px; }
+.input-narrow-block { width: 100px; }
+/* Tabbladen: op smalle schermen horizontaal scrollen i.p.v. de pagina te breed maken */
+.tabs { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button { white-space: nowrap; flex-shrink: 0; }
