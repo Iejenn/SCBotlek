@@ -36,6 +36,9 @@ const REASONS: Record<string, string> = {
   player_already_linked: 'Deze speler is al aan een ander account gekoppeld.',
   too_soon: 'Er is net al bijgewerkt; probeer het over een paar minuten opnieuw.',
   sync_failed: 'Ophalen bij Sportlink mislukt. Kijk in het logboek hieronder.',
+  not_a_match: 'Statistieken kun je alleen bij wedstrijden invullen.',
+  match_not_started: 'Deze wedstrijd is nog niet begonnen.',
+  too_many_goals: 'Meer doelpunten of assists ingevuld dan de uitslag toelaat.',
 }
 
 export function reasonText(reason: unknown): string {

@@ -16,6 +16,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </NavLink>
           <nav className="nav">
             <NavLink to="/" end>Agenda</NavLink>
+            <NavLink to="/statistieken">Statistieken</NavLink>
             {isStaff(profile?.role) && <NavLink to="/beheer">Beheer</NavLink>}
           </nav>
           <div className="user">

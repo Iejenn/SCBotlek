@@ -51,6 +51,9 @@ Klopt het? Verander de laatste regel in `COMMIT;`.
 - De `client_id` is de sleutel van de club (staat openbaar op scbotlek.nl). Wordt die vernieuwd, pas dan de
   constante `c_client` aan in de functie `sync_sportlink` en draai het bestand opnieuw.
 
+### 6. Statistieken (fase 2)
+Draai `supabase/003_match_stats.sql` in de SQL Editor (eindigt direct op `COMMIT;`, voegt alleen een functie toe).
+
 ## Rollen
 
 | Rol | Kan |
@@ -72,6 +75,6 @@ WHERE email = 'gebruikersnaam@users.scbotlek.app';
 
 ## Planning
 - [x] Fase 1: agenda, trainingsreeksen, aan/afmelden, rollen
-- [ ] Fase 2: uitslag + doelpunten/assists/kaarten invoeren, statistiekenpagina (topscorer, aanwezigheid %)
+- [x] Fase 2: doelpunten/assists/kaarten invoeren, statistiekenpagina per seizoen (topscorer, aanwezigheid %)
 - [x] Koppeling Sportlink (automatisch wedstrijdschema + uitslagen)
 - [ ] Competitiestand tonen

@@ -8,6 +8,7 @@ import AgendaPage from './pages/AgendaPage'
 import EventPage from './pages/EventPage'
 import EventFormPage from './pages/EventFormPage'
 import ManagePage from './pages/ManagePage'
+import StatsPage from './pages/StatsPage'
 
 export default function App() {
   const { session, profile, loading, signOut } = useAuth()
@@ -45,6 +46,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<AgendaPage />} />
         <Route path="/activiteit/:id" element={<EventPage />} />
+        <Route path="/statistieken" element={<StatsPage />} />
         {/* Beheerpagina's alleen tonen aan staf; de database checkt het nogmaals */}
         {staff && <Route path="/activiteit/nieuw" element={<EventFormPage />} />}
         {staff && <Route path="/activiteit/:id/bewerken" element={<EventFormPage />} />}

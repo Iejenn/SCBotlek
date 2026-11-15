@@ -59,3 +59,12 @@ export const ROLE_LABELS: Record<Role, string> = {
 // De echte controle zit in de database-functies.
 export const isTeam = (r?: Role) => r === 'speler' || r === 'aanvoerder' || r === 'beheerder'
 export const isStaff = (r?: Role) => r === 'aanvoerder' || r === 'beheerder'
+
+export type MatchStat = {
+  event_id: string
+  player_id: string
+  goals: number
+  assists: number
+  yellow_cards: number
+  red_card: boolean
+}

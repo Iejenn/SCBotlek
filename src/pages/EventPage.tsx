@@ -5,10 +5,11 @@ import { reasonText, rpc, supabase } from '../lib/supabase'
 import { formatLongDay, formatTime } from '../lib/format'
 import {
   isStaff, isTeam,
-  type Attendance, type AttendanceStatus, type Player, type TeamEvent,
+  type Attendance, type AttendanceStatus, type MatchStat, type Player, type TeamEvent,
 } from '../lib/types'
 import AttendanceButtons from '../components/AttendanceButtons'
 import { EventTitle, Score } from '../components/EventBits'
+import MatchStatsEditor from '../components/MatchStatsEditor'
 
 const COMPETITION_LABEL = { competitie: 'Competitie', beker: 'Beker', oefen: 'Oefenwedstrijd' } as const
 
@@ -17,7 +18,9 @@ export default function EventPage() {
   const navigate = useNavigate()
   const { profile } = useAuth()
   const [ev, setEv] = useState<TeamEvent | null>(null)
-  const [players, setPlayers] = useState<Player[]>([])
+  // Alle spelers (ook inactieve), nodig om namen bij statistieken te tonen
+  const [allPlayers, setAllPlayers] = useState<Player[]>([])
+  const [stats, setStats] = useState<MatchStat[]>([])
   const [attendance, setAttendance] = useState<Attendance[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -28,20 +31,21 @@ export default function EventPage() {
   useEffect(() => {
     let cancelled = false
     async function load() {
-      const { data } = await supabase.from('events').select('*').eq('id', id!).maybeSingle()
-      let p: Player[] = []
+      const [er, pr, sr] = await Promise.all([
+        supabase.from('events').select('*').eq('id', id!).maybeSingle(),
+        supabase.from('players').select('*').order('name'),
+        supabase.from('match_stats').select('*').eq('event_id', id!),
+      ])
       let a: Attendance[] = []
+      // Aanwezigheid alleen voor het team (RLS laat supporters toch niets zien)
       if (team) {
-        const [pr, ar] = await Promise.all([
-          supabase.from('players').select('*').eq('active', true).order('name'),
-          supabase.from('attendance').select('event_id, player_id, status, note').eq('event_id', id!),
-        ])
-        p = (pr.data as Player[] | null) ?? []
-        a = (ar.data as Attendance[] | null) ?? []
+        const { data } = await supabase.from('attendance').select('event_id, player_id, status, note').eq('event_id', id!)
+        a = (data as Attendance[] | null) ?? []
       }
       if (!cancelled) {
-        setEv(data as TeamEvent | null)
-        setPlayers(p)
+        setEv(er.data as TeamEvent | null)
+        setAllPlayers((pr.data as Player[] | null) ?? [])
+        setStats((sr.data as MatchStat[] | null) ?? [])
         setAttendance(a)
         setLoading(false)
       }
@@ -70,6 +74,14 @@ export default function EventPage() {
   if (!ev) return <p>Activiteit niet gevonden. <Link to="/">Terug naar agenda</Link></p>
 
   const upcoming = new Date(ev.starts_at) > new Date() && ev.status !== 'afgelast'
+  const started = new Date(ev.starts_at) <= new Date()
+  const players = allPlayers.filter((p) => p.active)
+  const nameOf = (pid: string) => allPlayers.find((p) => p.id === pid)?.name ?? 'Onbekend'
+  // In de editor: actieve spelers + oud-spelers die al statistieken in deze wedstrijd hebben
+  const editorPlayers = allPlayers.filter((p) => p.active || stats.some((s) => s.player_id === p.id))
+  const scorers = stats.filter((s) => s.goals > 0).sort((a, b) => b.goals - a.goals)
+  const assisters = stats.filter((s) => s.assists > 0).sort((a, b) => b.assists - a.assists)
+  const carded = stats.filter((s) => s.yellow_cards > 0 || s.red_card)
   const statusOf = (pid: string) => attendance.find((a) => a.player_id === pid)?.status
   const groups: { key: AttendanceStatus | 'onbekend'; title: string; list: Player[] }[] = [
     { key: 'aanwezig', title: 'Komt', list: players.filter((p) => statusOf(p.id) === 'aanwezig') },
@@ -112,6 +124,34 @@ export default function EventPage() {
         )}
         {error && <p className="error">{error}</p>}
       </div>
+
+      {ev.kind === 'wedstrijd' && stats.length > 0 && (
+        <div className="card">
+          <h2>Wedstrijdverslag</h2>
+          {scorers.length > 0 && (
+            <p><span className="stat-label">⚽ Doelpunten</span> {scorers.map((s) => `${nameOf(s.player_id)}${s.goals > 1 ? ` (${s.goals})` : ''}`).join(', ')}</p>
+          )}
+          {assisters.length > 0 && (
+            <p><span className="stat-label">🅰️ Assists</span> {assisters.map((s) => `${nameOf(s.player_id)}${s.assists > 1 ? ` (${s.assists})` : ''}`).join(', ')}</p>
+          )}
+          {carded.length > 0 && (
+            <p>
+              <span className="stat-label">Kaarten</span>{' '}
+              {carded.map((s) => `${nameOf(s.player_id)} ${'🟨'.repeat(s.yellow_cards)}${s.red_card ? '🟥' : ''}`).join(', ')}
+            </p>
+          )}
+        </div>
+      )}
+
+      {staff && ev.kind === 'wedstrijd' && started && ev.status !== 'afgelast' && (
+        <MatchStatsEditor
+          eventId={ev.id}
+          players={editorPlayers}
+          stats={stats}
+          scoreUs={ev.score_us}
+          onSaved={setStats}
+        />
+      )}
 
       {team && profile?.player_id && upcoming && (
         <div className="card">
