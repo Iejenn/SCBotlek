@@ -270,3 +270,13 @@ label.check-row { flex-direction: row; align-items: center; gap: 10px; }
 .table th.center, .table td.center { text-align: center; }
 .add-player { display: block; width: 100%; margin: 10px 0 14px; }
 .badge-cup { background: color-mix(in srgb, var(--accent) 15%, var(--surface)); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+
+/* ---------- nieuwe accounts ---------- */
+.nav-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--red); margin-left: 6px; vertical-align: top; }
+.tab-count { display: inline-block; margin-left: 6px; min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--red); color: #fff; font-size: 0.75rem; line-height: 18px; text-align: center; }
+.pending-card { border-left: 4px solid var(--red); }
+.pending-list { list-style: none; padding: 0; margin: 0; }
+.pending-list li { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.pending-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+/* Tabbladen: doorlopen op een tweede regel i.p.v. buiten beeld vallen */
+.tabs { flex-wrap: wrap; overflow-x: visible; }

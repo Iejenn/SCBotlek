@@ -2,9 +2,11 @@ import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { ROLE_LABELS, isStaff } from '../lib/types'
+import { usePendingCount } from '../lib/pendingUsers'
 
 export default function Layout({ children }: { children: ReactNode }) {
   const { profile, signOut } = useAuth()
+  const pending = usePendingCount(profile?.role === 'beheerder')
 
   return (
     <div className="app">
@@ -17,7 +19,12 @@ export default function Layout({ children }: { children: ReactNode }) {
           <nav className="nav">
             <NavLink to="/" end>Agenda</NavLink>
             <NavLink to="/statistieken">Statistieken</NavLink>
-            {isStaff(profile?.role) && <NavLink to="/beheer">Beheer</NavLink>}
+            {isStaff(profile?.role) && (
+              <NavLink to="/beheer">
+                Beheer
+                {pending > 0 && <span className="nav-dot" aria-label={`${pending} nieuwe accounts`} />}
+              </NavLink>
+            )}
           </nav>
           <div className="user">
             {profile && (

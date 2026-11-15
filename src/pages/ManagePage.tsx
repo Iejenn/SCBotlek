@@ -3,6 +3,7 @@ import { useAuth } from '../lib/auth'
 import { reasonText, rpc, supabase } from '../lib/supabase'
 import { formatDay, formatTime } from '../lib/format'
 import { refreshTeamSettings } from '../lib/teamSettings'
+import { isPending, normName, usePendingCount } from '../lib/pendingUsers'
 import { ROLE_LABELS, type Player, type Profile, type Role } from '../lib/types'
 
 type Tab = 'selectie' | 'trainingen' | 'sportlink' | 'instellingen' | 'gebruikers'
@@ -12,6 +13,11 @@ export default function ManagePage() {
   const { profile } = useAuth()
   const admin = profile?.role === 'beheerder'
   const [tab, setTab] = useState<Tab>('selectie')
+  const pending = usePendingCount(admin)
+  // Wachten er nieuwe accounts? Dan direct het tabblad Gebruikers openen
+  useEffect(() => {
+    if (pending > 0) setTab('gebruikers')
+  }, [pending])
 
   return (
     <div>
@@ -22,7 +28,9 @@ export default function ManagePage() {
         <button className={tab === 'sportlink' ? 'is-active' : ''} onClick={() => setTab('sportlink')}>Sportlink</button>
         <button className={tab === 'instellingen' ? 'is-active' : ''} onClick={() => setTab('instellingen')}>Instellingen</button>
         {admin && (
-          <button className={tab === 'gebruikers' ? 'is-active' : ''} onClick={() => setTab('gebruikers')}>Gebruikers</button>
+          <button className={tab === 'gebruikers' ? 'is-active' : ''} onClick={() => setTab('gebruikers')}>
+            Gebruikers{pending > 0 && <span className="tab-count">{pending}</span>}
+          </button>
         )}
       </div>
       {tab === 'selectie' && <SquadTab />}
@@ -467,8 +475,56 @@ function UsersTab() {
     setBusy(false)
   }
 
+  // Spelers die al aan een (ander) account hangen, niet nog eens aanbieden
+  const linkedIds = new Set(users.map((x) => x.player_id).filter(Boolean) as string[])
+  const freePlayers = players.filter((p) => !linkedIds.has(p.id))
+  const pendingUsers = users.filter(isPending)
+  // Beste gok voor een account: zelfde naam, anders zelfde voornaam
+  const suggestFor = (u: Profile): Player | undefined => {
+    const n = normName(u.display_name)
+    return (
+      freePlayers.find((p) => normName(p.name) === n) ??
+      freePlayers.find((p) => normName(p.name).split(' ')[0] === n.split(' ')[0])
+    )
+  }
+
   return (
+    <>
+    {pendingUsers.length > 0 && (
+      <div className="card pending-card">
+        <h2>Nog te koppelen ({pendingUsers.length})</h2>
+        <p className="muted small">
+          Nieuwe accounts. Koppel ze aan hun naam in de selectie; ze worden dan automatisch speler en kunnen zich
+          aanmelden. Is het een supporter (geen speler)? Laat dan staan; je kunt dit blok negeren.
+        </p>
+        <ul className="pending-list">
+          {pendingUsers.map((u) => {
+            const s = suggestFor(u)
+            return (
+              <li key={u.id}>
+                <div>
+                  <b>{u.display_name}</b> <span className="muted small">@{u.username}</span>
+                </div>
+                <div className="pending-actions">
+                  {s && (
+                    <button className="btn btn-primary btn-small" disabled={busy} onClick={() => void linkPlayer(u, s.id)}>
+                      Koppel aan {s.name}
+                    </button>
+                  )}
+                  <select value="" disabled={busy} onChange={(e) => void linkPlayer(u, e.target.value)} aria-label={`Koppel ${u.display_name}`}>
+                    <option value="">{s ? 'Andere speler…' : 'Kies speler…'}</option>
+                    {freePlayers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    <option value="__new__">+ Nieuwe speler: {u.display_name}</option>
+                  </select>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+    )}
     <div className="card">
+      <h2>Alle accounts</h2>
       <p className="muted small">
         Nieuwe accounts zijn altijd supporter. Maak teamleden <b>speler</b> en koppel ze aan hun naam in de selectie,
         dan kunnen ze zich aan- en afmelden. Staat iemand nog niet in de selectie? Kies
@@ -506,7 +562,10 @@ function UsersTab() {
                     >
                       <option value="">– geen –</option>
                       {!u.player_id && <option value="__new__">+ Nieuwe speler: {u.display_name}</option>}
-                      {players.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      {/* eigen speler + spelers die nog niet aan een ander account hangen */}
+                      {players
+                        .filter((p) => p.id === u.player_id || !linkedIds.has(p.id))
+                        .map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
                   </td>
                   <td>
@@ -526,5 +585,6 @@ function UsersTab() {
         </table>
       </div>
     </div>
+    </>
   )
 }
