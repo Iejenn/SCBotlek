@@ -10,6 +10,7 @@ type Props = {
   eventId: string
   players: Player[] // actieve spelers + wie al statistieken heeft
   presentIds: Set<string> // spelers met ✓ (aanwezig) bij deze wedstrijd
+  onAttendanceChanged?: () => void // na "speler toevoegen" de aanwezigheid opnieuw laden
   stats: MatchStat[]
   scoreUs: number | null
   onSaved: (stats: MatchStat[]) => void
@@ -17,15 +18,15 @@ type Props = {
 
 // Invoerscherm voor aanvoerders: doelpunten, assists en kaarten per speler.
 // Slaat alles in één keer op via de save_match_stats RPC.
-export default function MatchStatsEditor({ eventId, players, presentIds, stats, scoreUs, onSaved }: Props) {
+export default function MatchStatsEditor({ eventId, players, presentIds, stats, scoreUs, onSaved, onAttendanceChanged }: Props) {
   const [rows, setRows] = useState<Record<string, Row>>(() =>
     Object.fromEntries(stats.map((s) => [s.player_id, { ...s }])),
   )
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  // Standaard alleen aanwezigen tonen; is er niemand aangemeld, dan meteen iedereen
-  const [showAll, setShowAll] = useState(presentIds.size === 0)
+  // Spelers die de aanvoerder hier handmatig heeft toegevoegd (speelden mee zonder aanmelding)
+  const [added, setAdded] = useState<Set<string>>(new Set())
 
   const get = (id: string) => rows[id] ?? EMPTY
   const update = (id: string, patch: Partial<Row>) => {
@@ -38,8 +39,18 @@ export default function MatchStatsEditor({ eventId, players, presentIds, stats, 
     const r = rows[id]
     return !!r && (r.goals > 0 || r.assists > 0 || r.yellow_cards > 0 || r.red_card)
   }
-  const visible = showAll ? players : players.filter((p) => presentIds.has(p.id) || hasData(p.id))
-  const hiddenCount = players.length - visible.length
+  // Alleen wie er was: aanwezig, al iets ingevuld, of hier toegevoegd
+  const visible = players.filter((p) => presentIds.has(p.id) || hasData(p.id) || added.has(p.id))
+  const addable = players.filter((p) => !visible.includes(p))
+
+  // Speler toevoegen = hij was er dus ook: meteen op aanwezig zetten
+  async function addPlayer(id: string) {
+    if (!id) return
+    setAdded((prev) => new Set(prev).add(id))
+    const res = await rpc('set_attendance', { p_event_id: eventId, p_status: 'aanwezig', p_player_id: id })
+    if (!res.ok) setError(`Toegevoegd, maar aanwezigheid niet opgeslagen: ${reasonText(res.reason)}`)
+    else onAttendanceChanged?.()
+  }
 
   const totalGoals = Object.values(rows).reduce((sum, r) => sum + r.goals, 0)
   const totalAssists = Object.values(rows).reduce((sum, r) => sum + r.assists, 0)
@@ -83,26 +94,8 @@ export default function MatchStatsEditor({ eventId, players, presentIds, stats, 
         {scoreUs !== null && totalGoals < scoreUs && <> · rest = eigen doelpunten tegenstander of onbekend</>}
       </p>
       <p className="muted small">
-        {showAll ? (
-          <>
-            Alle spelers zichtbaar.{' '}
-            {presentIds.size > 0 && (
-              <button type="button" className="btn-link-inline" onClick={() => setShowAll(false)}>
-                Alleen aanwezigen tonen
-              </button>
-            )}
-            {presentIds.size === 0 && 'Niemand had zich aangemeld voor deze wedstrijd.'}
-          </>
-        ) : (
-          <>
-            Alleen spelers die aanwezig waren ({visible.length}).{' '}
-            {hiddenCount > 0 && (
-              <button type="button" className="btn-link-inline" onClick={() => setShowAll(true)}>
-                Iemand mist? Toon alle spelers ({hiddenCount} meer)
-              </button>
-            )}
-          </>
-        )}
+        Alleen spelers die er waren ({visible.length}). Speelde iemand mee zonder aanmelding? Voeg hem hieronder toe,
+        dan staat hij meteen ook als aanwezig.
       </p>
       <div className="table-wrap">
         <table className="table stats-input">
@@ -150,6 +143,22 @@ export default function MatchStatsEditor({ eventId, players, presentIds, stats, 
           </tbody>
         </table>
       </div>
+      {visible.length === 0 && <p className="muted small">Nog niemand toegevoegd.</p>}
+      {addable.length > 0 && (
+        <select
+          className="add-player"
+          value=""
+          onChange={(e) => void addPlayer(e.target.value)}
+          aria-label="Speler toevoegen"
+        >
+          <option value="">+ Speler toevoegen…</option>
+          {addable.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.shirt_number ? `${p.shirt_number}. ` : ''}{p.name}{p.is_guest ? ' (leen)' : ''}
+            </option>
+          ))}
+        </select>
+      )}
       {error && <p className="error">{error}</p>}
       {message && <p className="success">{message}</p>}
       <button className="btn btn-primary" onClick={save} disabled={busy || players.length === 0}>
