@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { reasonText, rpc } from '../lib/supabase'
+import { formatDay, formatTime } from '../lib/format'
 import type { AttendanceStatus } from '../lib/types'
 
 const OPTIONS: { value: Exclude<AttendanceStatus, 'wachtlijst'>; label: string }[] = [
@@ -13,12 +14,14 @@ type Props = {
   current: AttendanceStatus | undefined
   playerId?: string // alleen meegeven als staf voor iemand anders invult
   compact?: boolean
+  // Aanmeldvenster: vóór dit moment kan ✓ nog niet (✕ en ? wel). null = altijd open
+  opensAt?: Date | null
   // status zoals de server hem heeft vastgelegd (kan 'wachtlijst' zijn als de wedstrijd vol is)
   onChange: (status: AttendanceStatus) => void
 }
 
 // Drie knoppen om aanwezigheid door te geven. Schrijft via de set_attendance RPC.
-export default function AttendanceButtons({ eventId, current, playerId, compact, onChange }: Props) {
+export default function AttendanceButtons({ eventId, current, playerId, compact, opensAt, onChange }: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
@@ -33,7 +36,13 @@ export default function AttendanceButtons({ eventId, current, playerId, compact,
       ...(playerId ? { p_player_id: playerId } : {}),
     })
     setBusy(false)
-    if (!res.ok) return setError(reasonText(res.reason))
+    if (!res.ok) {
+      if (res.reason === 'signup_not_open' && res.opens_at) {
+        const at = res.opens_at as string
+        return setError(`Aanmelden kan vanaf ${formatDay(at)} ${formatTime(at)}.`)
+      }
+      return setError(reasonText(res.reason))
+    }
     const final = (res.status as AttendanceStatus) ?? status
     if (final === 'wachtlijst' && !compact) {
       setInfo(`De wedstrijd zit vol. Je staat op de wachtlijst${res.position ? ` (plek ${res.position as number})` : ''}; je schuift automatisch door als er iemand afmeldt.`)
@@ -42,6 +51,9 @@ export default function AttendanceButtons({ eventId, current, playerId, compact,
   }
 
   const waiting = current === 'wachtlijst'
+  // Venster nog dicht? Dan ✓ uitschakelen, tenzij je al een plek (of wachtlijstplek) hebt
+  const notOpenYet =
+    !!opensAt && opensAt.getTime() > Date.now() && current !== 'aanwezig' && current !== 'wachtlijst'
 
   return (
     <div>
@@ -54,7 +66,8 @@ export default function AttendanceButtons({ eventId, current, playerId, compact,
             <button
               key={o.value}
               type="button"
-              disabled={busy}
+              disabled={busy || (o.value === 'aanwezig' && notOpenYet)}
+              title={o.value === 'aanwezig' && notOpenYet && opensAt ? `Aanmelden kan vanaf ${formatDay(opensAt.toISOString())} ${formatTime(opensAt.toISOString())}` : undefined}
               className={`att-btn att-${isWaitBtn ? 'wachtlijst' : o.value} ${current === o.value || isWaitBtn ? 'is-active' : ''}`}
               onClick={(e) => {
                 e.preventDefault() // knop staat soms in een link-kaart
@@ -66,6 +79,11 @@ export default function AttendanceButtons({ eventId, current, playerId, compact,
           )
         })}
       </div>
+      {notOpenYet && opensAt && (
+        <p className="muted small opens-at">
+          🔒 Aanmelden kan vanaf {formatDay(opensAt.toISOString())} {formatTime(opensAt.toISOString())}
+        </p>
+      )}
       {info && <p className="notice small">{info}</p>}
       {error && <p className="error small">{error}</p>}
     </div>

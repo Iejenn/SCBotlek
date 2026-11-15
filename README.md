@@ -66,6 +66,10 @@ zodat vorig seizoen als "SC Botlek 6" en dit seizoen als "SC Botlek 7" wordt get
 Draai `supabase/006_waitlist.sql` (eerst met `ROLLBACK;`, dan `COMMIT;`). Stel daarna in
 **Beheer → Instellingen** het maximum in. Volle wedstrijd = automatisch wachtlijst; bij afmelden schuift de eerste door.
 
+### 10. Aanmeldvenster
+Draai `supabase/007_signup_window.sql` (eerst `ROLLBACK;`, dan `COMMIT;`). In **Beheer → Instellingen** stel je in
+hoeveel dagen voor een wedstrijd ✓ opengaat (bijv. 14). ✕ en "misschien" kunnen altijd.
+
 ## Rollen
 
 | Rol | Kan |

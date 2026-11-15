@@ -10,7 +10,7 @@ import {
 import AttendanceButtons from '../components/AttendanceButtons'
 import { EventTitle, Score } from '../components/EventBits'
 import MatchStatsEditor from '../components/MatchStatsEditor'
-import { useMaxMatchPlayers } from '../lib/teamSettings'
+import { signupOpensAt, useTeamSettings } from '../lib/teamSettings'
 
 const COMPETITION_LABEL = { competitie: 'Competitie', beker: 'Beker', oefen: 'Oefenwedstrijd' } as const
 
@@ -57,7 +57,7 @@ export default function EventPage() {
     }
   }, [id, team])
 
-  const maxPlayers = useMaxMatchPlayers()
+  const { maxMatchPlayers: maxPlayers, signupOpenDays } = useTeamSettings()
 
   // Na een wijziging alles opnieuw ophalen: door de wachtlijst kunnen ook anderen verschoven zijn
   async function reloadAttendance() {
@@ -170,6 +170,7 @@ export default function EventPage() {
         <div className="card">
           <h2>Ben jij erbij?</h2>
           <AttendanceButtons
+            opensAt={ev ? signupOpensAt(ev, signupOpenDays) : null}
             eventId={ev.id}
             current={statusOf(profile.player_id)}
             onChange={() => void reloadAttendance()}
@@ -203,6 +204,7 @@ export default function EventPage() {
                         {/* Staf kan voor iedereen invullen, ook achteraf */}
                         {staff && (
                           <AttendanceButtons
+            opensAt={ev ? signupOpensAt(ev, signupOpenDays) : null}
                             eventId={ev.id}
                             playerId={p.id}
                             current={statusOf(p.id)}

@@ -4,7 +4,7 @@ import { useAuth } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 import { formatDay, formatTime } from '../lib/format'
 import { seasonLabel, seasonOf, teamNameBySeason } from '../lib/season'
-import { useMaxMatchPlayers } from '../lib/teamSettings'
+import { signupOpensAt, useTeamSettings } from '../lib/teamSettings'
 import { isStaff, isTeam, type Attendance, type TeamEvent } from '../lib/types'
 import AttendanceButtons from '../components/AttendanceButtons'
 import { EventTitle, Score } from '../components/EventBits'
@@ -20,7 +20,7 @@ export default function AgendaPage() {
 
   const team = isTeam(profile?.role)
   const teamNames = teamNameBySeason(events)
-  const maxPlayers = useMaxMatchPlayers()
+  const { maxMatchPlayers: maxPlayers, signupOpenDays } = useTeamSettings()
   const myPlayerId = profile?.player_id ?? null
 
   useEffect(() => {
@@ -145,7 +145,13 @@ export default function AgendaPage() {
                       )}
                     </div>
                     {canRespond && (
-                      <AttendanceButtons eventId={ev.id} current={mine} compact onChange={() => void refreshEvent(ev.id)} />
+                      <AttendanceButtons
+                        eventId={ev.id}
+                        current={mine}
+                        compact
+                        opensAt={signupOpensAt(ev, signupOpenDays)}
+                        onChange={() => void refreshEvent(ev.id)}
+                      />
                     )}
                   </div>
                   {ev.score_us !== null && ev.score_them !== null && <Score ev={ev} />}

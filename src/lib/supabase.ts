@@ -40,6 +40,7 @@ const REASONS: Record<string, string> = {
   match_not_started: 'Deze wedstrijd is nog niet begonnen.',
   player_linked: 'Deze speler is gekoppeld aan een account. Ontkoppel eerst bij Gebruikers.',
   player_has_history: 'Deze speler heeft al aanmeldingen of statistieken. Zet hem op niet actief in plaats van verwijderen.',
+  signup_not_open: 'Aanmelden voor deze wedstrijd is nog niet open.',
   too_many_goals: 'Meer doelpunten of assists ingevuld dan de uitslag toelaat.',
 }
 

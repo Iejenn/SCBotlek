@@ -261,3 +261,5 @@ label.check-row { flex-direction: row; align-items: center; gap: 10px; }
 .tabs { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 .tabs::-webkit-scrollbar { display: none; }
 .tabs button { white-space: nowrap; flex-shrink: 0; }
+.att-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.opens-at { margin: 6px 0 0; }

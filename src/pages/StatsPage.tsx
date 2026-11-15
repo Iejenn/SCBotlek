@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../lib/auth'
+import { formatDay, formatTime } from '../lib/format'
 import { supabase } from '../lib/supabase'
 import { seasonLabel, seasonOf, seasonRange, teamNameBySeason } from '../lib/season'
 import Standings from '../components/Standings'
@@ -170,6 +171,9 @@ export default function StatsPage() {
   )
   const presentAtMatches = attendance.filter((a) => a.status === 'aanwezig' && pastMatchIds.has(a.event_id)).length
   const avgPerMatch = pastMatches.length ? presentAtMatches / pastMatches.length : null
+  const presentAtTrainings = attendance.filter((a) => a.status === 'aanwezig' && pastTrainingIds.has(a.event_id)).length
+  const avgPerTraining = pastTrainings.length ? presentAtTrainings / pastTrainings.length : null
+  const nextTraining = events.find((e) => e.kind === 'training' && new Date(e.starts_at) >= now && e.status !== 'afgelast')
 
   const Th = ({ k, children, title, className = '' }: { k: SortKey; children: React.ReactNode; title: string; className?: string }) => (
     <th className={`num ${className}`}>
@@ -293,44 +297,58 @@ export default function StatsPage() {
                   <button className={attSort === 'trainingPct' ? 'is-active' : ''} onClick={() => setAttSort('trainingPct')}>Trainingen</button>
                 </div>
               </div>
-              {!hasAttendance ? (
-                <p className="muted small">Voor dit seizoen is (nog) geen aanwezigheid bijgehouden.</p>
-              ) : (
-                <>
-                  <p className="muted small">
-                    {pastMatches.length} {pastMatches.length === 1 ? 'wedstrijd' : 'wedstrijden'} en {pastTrainings.length}{' '}
-                    {pastTrainings.length === 1 ? 'training' : 'trainingen'} geweest
-                    {avgPerMatch !== null && <> · gemiddeld <b>{avgPerMatch.toLocaleString('nl-NL', { maximumFractionDigits: 1 })}</b> spelers per wedstrijd</>}
-                  </p>
-                  <div className="table-wrap">
-                    <table className="table att-table">
-                      <thead>
-                        <tr>
-                          <th>Speler</th>
-                          <th>Wedstrijden</th>
-                          <th>Trainingen</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {attRows.map((r) => (
-                          <tr key={r.player.id} className={r.player.active ? '' : 'is-inactive'}>
-                            <td>
-                              {r.player.shirt_number && <span className="shirt">{r.player.shirt_number}</span>}
-                              {r.player.name}
-                            </td>
-                            <td><Meter n={r.matchesPresent} total={pastMatches.length} /></td>
-                            <td><Meter n={r.trainingsPresent} total={pastTrainings.length} /></td>
+              {(() => {
+                // Schakelaar toont óf wedstrijden óf trainingen
+                const isMatch = attSort === 'matchPct'
+                const total = isMatch ? pastMatches.length : pastTrainings.length
+                const avg = isMatch ? avgPerMatch : avgPerTraining
+                if (total === 0) {
+                  return (
+                    <p className="muted small">
+                      {isMatch ? 'Er is dit seizoen nog geen wedstrijd geweest.' : 'Er is dit seizoen nog geen training geweest.'}
+                      {!isMatch && nextTraining && <> De eerste is {formatDay(nextTraining.starts_at)} {formatTime(nextTraining.starts_at)}.</>}
+                    </p>
+                  )
+                }
+                if (!hasAttendance) {
+                  return <p className="muted small">Voor dit seizoen is (nog) geen aanwezigheid bijgehouden.</p>
+                }
+                return (
+                  <>
+                    <p className="muted small">
+                      {total} {isMatch ? (total === 1 ? 'wedstrijd' : 'wedstrijden') : total === 1 ? 'training' : 'trainingen'} geweest
+                      {avg !== null && (
+                        <> · gemiddeld <b>{avg.toLocaleString('nl-NL', { maximumFractionDigits: 1 })}</b> spelers per {isMatch ? 'wedstrijd' : 'training'}</>
+                      )}
+                    </p>
+                    <div className="table-wrap">
+                      <table className="table att-table">
+                        <thead>
+                          <tr>
+                            <th>Speler</th>
+                            <th>{isMatch ? 'Wedstrijden' : 'Trainingen'}</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <p className="muted small">
-                    Telt de ✓-aanmeldingen bij activiteiten die al geweest zijn (afgelaste niet). Was iemand er toch wel of
-                    niet? Een aanvoerder kan dat achteraf aanpassen op de wedstrijd- of trainingspagina.
-                  </p>
-                </>
-              )}
+                        </thead>
+                        <tbody>
+                          {attRows.map((r) => (
+                            <tr key={r.player.id} className={r.player.active ? '' : 'is-inactive'}>
+                              <td>
+                                {r.player.shirt_number && <span className="shirt">{r.player.shirt_number}</span>}
+                                {r.player.name}
+                              </td>
+                              <td><Meter n={isMatch ? r.matchesPresent : r.trainingsPresent} total={total} /></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )
+              })()}
+              <p className="muted small">
+                Telt de ✓-aanmeldingen bij activiteiten die al geweest zijn (afgelaste niet). Was iemand er toch wel of
+                niet? Een aanvoerder kan dat achteraf aanpassen op de wedstrijd- of trainingspagina.
+              </p>
             </div>
           )}
         </>

@@ -205,6 +205,8 @@ function TrainingSeriesTab() {
 function SettingsTab() {
   const [limitOn, setLimitOn] = useState(false)
   const [max, setMax] = useState('15')
+  const [windowOn, setWindowOn] = useState(false)
+  const [days, setDays] = useState('14')
   const [loaded, setLoaded] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
@@ -212,8 +214,10 @@ function SettingsTab() {
 
   useEffect(() => {
     refreshTeamSettings().then((v) => {
-      setLimitOn(v !== null)
-      if (v !== null) setMax(String(v))
+      setLimitOn(v.maxMatchPlayers !== null)
+      if (v.maxMatchPlayers !== null) setMax(String(v.maxMatchPlayers))
+      setWindowOn(v.signupOpenDays !== null)
+      if (v.signupOpenDays !== null) setDays(String(v.signupOpenDays))
       setLoaded(true)
     })
   }, [])
@@ -223,8 +227,10 @@ function SettingsTab() {
     setBusy(true)
     setMessage(null)
     setError(null)
-    const value = limitOn ? Number(max) : null
-    const res = await rpc('set_team_settings', { p_max_match_players: value })
+    const res = await rpc('set_team_settings', {
+      p_max_match_players: limitOn ? Number(max) : null,
+      p_signup_open_days: windowOn ? Number(days) : null,
+    })
     setBusy(false)
     if (!res.ok) return setError(reasonText(res.reason))
     await refreshTeamSettings()
@@ -262,6 +268,31 @@ function SettingsTab() {
         Is een wedstrijd vol, dan komt wie daarna op ✓ drukt op de <b>wachtlijst</b>, op volgorde van aanmelden.
         Meldt iemand zich af, dan schuift de eerste van de wachtlijst automatisch door. Verlaag je het aantal,
         dan houdt wie al een plek heeft die. Trainingen hebben geen limiet.
+      </p>
+
+      <label className="check-row">
+        <input type="checkbox" checked={windowOn} onChange={(e) => setWindowOn(e.target.checked)} />
+        Aanmelden pas kort van tevoren
+      </label>
+      {windowOn && (
+        <label>
+          Aantal dagen voor de wedstrijd
+          <input
+            type="number"
+            min={1}
+            max={60}
+            inputMode="numeric"
+            value={days}
+            onChange={(e) => setDays(e.target.value)}
+            className="input-narrow-block"
+            required
+          />
+        </label>
+      )}
+      <p className="muted small">
+        Bijvoorbeeld 14: voor een wedstrijd op zaterdag 14:45 kan je je pas aanmelden (✓) vanaf zaterdag twee weken
+        eerder om 14:45. Zo heeft iedereen, ook wie in ploegendienst werkt, een eerlijke kans op een plek. Afmelden (✕)
+        en "misschien" kunnen altijd. Wie zich al eerder had aangemeld, houdt die plek.
       </p>
       {message && <p className="success">{message}</p>}
       {error && <p className="error">{error}</p>}
