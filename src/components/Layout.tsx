@@ -11,7 +11,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       <header className="topbar">
         <div className="topbar-inner">
           <NavLink to="/" className="brand">
-            <img src="/logo.jpg" alt="" className="brand-logo" />
+            <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="" className="brand-logo" />
             <span>SC Botlek</span>
           </NavLink>
           <nav className="nav">

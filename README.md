@@ -22,9 +22,16 @@ npm install
 npm run dev
 ```
 
-### 3. Netlify
-- Koppel de GitHub-repo, build command `npm run build`, publish directory `dist` (staat ook in `netlify.toml`).
-- Zet bij **Site configuration → Environment variables**: `VITE_SUPABASE_URL` en `VITE_SUPABASE_ANON_KEY`.
+### 3. GitHub Pages
+De site staat op **https://iejenn.github.io/SCBotlek/** en wordt automatisch gebouwd door
+`.github/workflows/pages.yml` bij elke push naar `main` of de feature-branch.
+
+Eenmalig instellen:
+- **Settings → Pages → Build and deployment → Source: GitHub Actions**
+- **Settings → Environments → github-pages → Deployment branches**: voeg de feature-branch toe
+  (standaard mag alleen `main` deployen).
+
+Supabase-URL en publishable key staan in de workflow; die zijn publiek, de beveiliging zit in de database.
 
 ### 4. Jezelf beheerder maken
 Registreer je in de app. Draai daarna in de Supabase SQL Editor (vervang `jouwnaam`):

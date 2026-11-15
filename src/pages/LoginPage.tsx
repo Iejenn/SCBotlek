@@ -53,7 +53,7 @@ export default function LoginPage() {
   return (
     <div className="center-screen login-bg">
       <form className="card login-card" onSubmit={handleSubmit}>
-        <img src="/logo.jpg" alt="SC Botlek" className="login-logo" />
+        <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="SC Botlek" className="login-logo" />
         <h1>SC Botlek</h1>
         <p className="muted">{mode === 'login' ? 'Log in om verder te gaan' : 'Maak een account aan'}</p>
 
