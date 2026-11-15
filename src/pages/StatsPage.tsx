@@ -6,7 +6,7 @@ import Standings from '../components/Standings'
 import { isTeam, type Attendance, type MatchStat, type Player, type TeamEvent } from '../lib/types'
 
 type CompFilter = 'alles' | 'competitie' | 'beker'
-type SortKey = 'goals' | 'assists' | 'ga' | 'cards' | 'matchPct' | 'trainingPct'
+type SortKey = 'goals' | 'assists' | 'ga' | 'cards'
 
 type PlayerRow = {
   player: Player
@@ -29,6 +29,7 @@ export default function StatsPage() {
   const [season, setSeason] = useState(seasonOf(new Date()))
   const [comp, setComp] = useState<CompFilter>('alles')
   const [sortKey, setSortKey] = useState<SortKey>('goals')
+  const [attSort, setAttSort] = useState<'matchPct' | 'trainingPct'>('matchPct')
 
   const [events, setEvents] = useState<TeamEvent[]>([])
   const [stats, setStats] = useState<MatchStat[]>([])
@@ -149,19 +150,25 @@ export default function StatsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [players, stats, attendance, comp, events])
 
-  const pct = (n: number, total: number) => (total ? Math.round((n / total) * 100) : 0)
   const sortValue = (r: PlayerRow): number => {
     switch (sortKey) {
       case 'goals': return r.goals * 1000 + r.assists
       case 'assists': return r.assists * 1000 + r.goals
       case 'ga': return (r.goals + r.assists) * 1000 + r.goals
       case 'cards': return r.red * 1000 + r.yellow
-      case 'matchPct': return pct(r.matchesPresent, pastMatches.length)
-      case 'trainingPct': return pct(r.trainingsPresent, pastTrainings.length)
     }
   }
   const sorted = [...rows].sort((a, b) => sortValue(b) - sortValue(a) || a.player.name.localeCompare(b.player.name))
   const top = [...rows].sort((a, b) => b.goals - a.goals)[0]
+
+  // Aanwezigheid: meest aanwezig bovenaan
+  const attRows = [...rows].sort((a, b) =>
+    attSort === 'matchPct'
+      ? b.matchesPresent - a.matchesPresent || b.trainingsPresent - a.trainingsPresent
+      : b.trainingsPresent - a.trainingsPresent || b.matchesPresent - a.matchesPresent,
+  )
+  const presentAtMatches = attendance.filter((a) => a.status === 'aanwezig' && pastMatchIds.has(a.event_id)).length
+  const avgPerMatch = pastMatches.length ? presentAtMatches / pastMatches.length : null
 
   const Th = ({ k, children, title, className = '' }: { k: SortKey; children: React.ReactNode; title: string; className?: string }) => (
     <th className={`num ${className}`}>
@@ -250,8 +257,6 @@ export default function StatsPage() {
                     <Th k="assists" title="Assists">🅰️</Th>
                     <Th k="ga" title="Doelpunten + assists" className="hide-sm">G+A</Th>
                     <Th k="cards" title="Kaarten" className="hide-sm">🟨🟥</Th>
-                    {hasAttendance && <Th k="matchPct" title="Aanwezig bij wedstrijden">W%</Th>}
-                    {hasAttendance && <Th k="trainingPct" title="Aanwezig bij trainingen">T%</Th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -267,16 +272,6 @@ export default function StatsPage() {
                       <td className="num hide-sm">
                         {r.yellow || r.red ? `${r.yellow}${r.red ? ` / ${r.red}` : ''}` : '–'}
                       </td>
-                      {hasAttendance && (
-                        <td className="num" title={`${r.matchesPresent} van ${pastMatches.length}`}>
-                          {pct(r.matchesPresent, pastMatches.length)}%
-                        </td>
-                      )}
-                      {hasAttendance && (
-                        <td className="num" title={`${r.trainingsPresent} van ${pastTrainings.length}`}>
-                          {pastTrainings.length ? `${pct(r.trainingsPresent, pastTrainings.length)}%` : '–'}
-                        </td>
-                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -284,11 +279,78 @@ export default function StatsPage() {
             </div>
             <p className="muted small">
               Tik op een kolomkop om te sorteren. Kaarten: geel / rood.
-              {hasAttendance && ' W% / T% = aanwezig bij wedstrijden / trainingen die al geweest zijn (✓-aanmeldingen).'}
             </p>
           </div>
+
+          {/* Aanwezigheid: alleen voor het team (supporters kunnen dit via RLS niet zien) */}
+          {team && (
+            <div className="card">
+              <div className="card-head">
+                <h2>Aanwezigheid</h2>
+                <div className="segmented segmented-small">
+                  <button className={attSort === 'matchPct' ? 'is-active' : ''} onClick={() => setAttSort('matchPct')}>Wedstrijden</button>
+                  <button className={attSort === 'trainingPct' ? 'is-active' : ''} onClick={() => setAttSort('trainingPct')}>Trainingen</button>
+                </div>
+              </div>
+              {!hasAttendance ? (
+                <p className="muted small">Voor dit seizoen is (nog) geen aanwezigheid bijgehouden.</p>
+              ) : (
+                <>
+                  <p className="muted small">
+                    {pastMatches.length} {pastMatches.length === 1 ? 'wedstrijd' : 'wedstrijden'} en {pastTrainings.length}{' '}
+                    {pastTrainings.length === 1 ? 'training' : 'trainingen'} geweest
+                    {avgPerMatch !== null && <> · gemiddeld <b>{avgPerMatch.toLocaleString('nl-NL', { maximumFractionDigits: 1 })}</b> spelers per wedstrijd</>}
+                  </p>
+                  <div className="table-wrap">
+                    <table className="table att-table">
+                      <thead>
+                        <tr>
+                          <th>Speler</th>
+                          <th>Wedstrijden</th>
+                          <th>Trainingen</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {attRows.map((r) => (
+                          <tr key={r.player.id} className={r.player.active ? '' : 'is-inactive'}>
+                            <td>
+                              {r.player.shirt_number && <span className="shirt">{r.player.shirt_number}</span>}
+                              {r.player.name}
+                            </td>
+                            <td><Meter n={r.matchesPresent} total={pastMatches.length} /></td>
+                            <td><Meter n={r.trainingsPresent} total={pastTrainings.length} /></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="muted small">
+                    Telt de ✓-aanmeldingen bij activiteiten die al geweest zijn (afgelaste niet). Was iemand er toch wel of
+                    niet? Een aanvoerder kan dat achteraf aanpassen op de wedstrijd- of trainingspagina.
+                  </p>
+                </>
+              )}
+            </div>
+          )}
         </>
       )}
+    </div>
+  )
+}
+
+// "5 / 7" met een balkje: hoe vaak iemand er was
+function Meter({ n, total }: { n: number; total: number }) {
+  if (!total) return <span className="muted">–</span>
+  const p = Math.round((n / total) * 100)
+  return (
+    <div className="meter" title={`${n} van ${total} (${p}%)`}>
+      <span className="meter-text">
+        <b>{n}</b>
+        <span className="muted"> / {total}</span>
+      </span>
+      <span className="meter-track" aria-hidden="true">
+        <span className="meter-fill" style={{ width: `${p}%` }} />
+      </span>
     </div>
   )
 }

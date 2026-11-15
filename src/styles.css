@@ -244,3 +244,10 @@ fieldset:disabled input, fieldset:disabled select, input:disabled { opacity: 0.6
 .club-logo { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }
 .season-header { font-weight: 700; font-size: 0.9rem; padding: 10px 2px 2px; color: var(--text); }
 .season-header:first-child { padding-top: 0; }
+
+/* ---------- aanwezigheid ---------- */
+.att-table td { vertical-align: middle; }
+.meter { display: flex; flex-direction: column; gap: 4px; min-width: 80px; }
+.meter-text { font-variant-numeric: tabular-nums; font-size: 0.9rem; }
+.meter-track { display: block; height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.meter-fill { display: block; height: 100%; border-radius: 3px; background: var(--accent); }
