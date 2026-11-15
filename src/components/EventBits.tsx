@@ -1,14 +1,17 @@
+import { prettyTeam } from '../lib/sportlink'
 import type { TeamEvent } from '../lib/types'
 
 // Kleine weergave-onderdelen die op meerdere pagina's terugkomen
 
 export function EventTitle({ ev }: { ev: TeamEvent }) {
   if (ev.kind === 'training') return <span>Training</span>
+  // Teamnaam van dat seizoen (bijv. SC Botlek 6), anders gewoon "SC Botlek"
+  const us = ev.team_name ? prettyTeam(ev.team_name) : 'SC Botlek'
   // Thuis: Botlek eerst, uit: tegenstander eerst (zoals op voetbal.nl)
   return ev.is_home === false ? (
-    <span>{ev.opponent} – <b>SC Botlek</b></span>
+    <span>{ev.opponent} – <b>{us}</b></span>
   ) : (
-    <span><b>SC Botlek</b> – {ev.opponent}</span>
+    <span><b>{us}</b> – {ev.opponent}</span>
   )
 }
 

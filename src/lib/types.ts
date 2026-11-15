@@ -36,6 +36,7 @@ export type TeamEvent = {
   score_them: number | null
   status: EventStatus
   notes: string | null
+  team_name: string | null // onze teamnaam volgens Sportlink, bijv. "Botlek, SC 6"
   source: 'handmatig' | 'voetbalnl' // 'voetbalnl' = automatisch uit Sportlink
 }
 

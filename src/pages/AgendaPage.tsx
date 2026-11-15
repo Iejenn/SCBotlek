@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 import { formatDay, formatTime } from '../lib/format'
+import { seasonLabel, seasonOf, teamNameBySeason } from '../lib/season'
 import { isStaff, isTeam, type Attendance, type AttendanceStatus, type TeamEvent } from '../lib/types'
 import AttendanceButtons from '../components/AttendanceButtons'
 import { EventTitle, Score } from '../components/EventBits'
@@ -17,6 +18,7 @@ export default function AgendaPage() {
   const [loading, setLoading] = useState(true)
 
   const team = isTeam(profile?.role)
+  const teamNames = teamNameBySeason(events)
   const myPlayerId = profile?.player_id ?? null
 
   useEffect(() => {
@@ -92,7 +94,11 @@ export default function AgendaPage() {
         <p className="muted">Nog niets gepland.</p>
       ) : (
         <ul className="event-list">
-          {events.map((ev) => {
+          {events.map((ev, i) => {
+            // Kopje boven de eerste activiteit van elk seizoen
+            const season = seasonOf(ev.starts_at)
+            const newSeason = i === 0 || seasonOf(events[i - 1].starts_at) !== season
+            const seasonTeam = teamNames.get(season)
             const evAtt = attendance.filter((a) => a.event_id === ev.id)
             const mine = evAtt.find((a) => a.player_id === myPlayerId)?.status
             const coming = evAtt.filter((a) => a.status === 'aanwezig').length
@@ -100,7 +106,14 @@ export default function AgendaPage() {
               team && myPlayerId && tab === 'aankomend' && ev.status !== 'afgelast' && new Date(ev.starts_at) > new Date()
 
             return (
-              <li key={ev.id}>
+              <Fragment key={ev.id}>
+              {newSeason && (
+                <li className="season-header">
+                  Seizoen {seasonLabel(season)}
+                  {seasonTeam && <span className="muted"> · {seasonTeam}</span>}
+                </li>
+              )}
+              <li>
                 <Link to={`/activiteit/${ev.id}`} className={`event-card kind-${ev.kind} status-${ev.status}`}>
                   <div className="event-date">
                     <span>{formatDay(ev.starts_at)}</span>
@@ -116,7 +129,8 @@ export default function AgendaPage() {
                         <span className="badge">{ev.is_home ? 'Thuis' : 'Uit'}</span>
                       )}
                       {ev.location && <span>{ev.location}</span>}
-                      {team && ev.status !== 'afgelast' && <span>{coming} aanwezig</span>}
+                      {/* bij oude wedstrijden zonder aanmeldingen (bijv. vorig seizoen) geen "0 aanwezig" */}
+                      {team && ev.status !== 'afgelast' && (tab === 'aankomend' || coming > 0) && <span>{coming} aanwezig</span>}
                     </div>
                     {canRespond && (
                       <AttendanceButtons eventId={ev.id} current={mine} compact onChange={(s) => updateMine(ev.id, s)} />
@@ -125,6 +139,7 @@ export default function AgendaPage() {
                   {ev.score_us !== null && ev.score_them !== null && <Score ev={ev} />}
                 </Link>
               </li>
+              </Fragment>
             )
           })}
         </ul>

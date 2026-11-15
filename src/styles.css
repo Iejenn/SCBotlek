@@ -242,3 +242,5 @@ fieldset:disabled input, fieldset:disabled select, input:disabled { opacity: 0.6
 .standings tr.is-own td:first-child { box-shadow: inset 3px 0 0 var(--red); }
 .team-cell { display: inline-flex; align-items: center; gap: 8px; }
 .club-logo { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }
+.season-header { font-weight: 700; font-size: 0.9rem; padding: 10px 2px 2px; color: var(--text); }
+.season-header:first-child { padding-top: 0; }

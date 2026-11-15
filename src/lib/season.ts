@@ -1,3 +1,5 @@
+import { prettyTeam } from './sportlink'
+
 // Een voetbalseizoen loopt van 1 juli t/m 30 juni.
 // We rekenen met het startjaar: seizoen 2026 = 2026/27.
 
@@ -15,4 +17,23 @@ export function seasonRange(startYear: number): { from: string; to: string } {
     from: new Date(startYear, 6, 1).toISOString(),
     to: new Date(startYear + 1, 6, 1).toISOString(),
   }
+}
+
+// Meest voorkomende teamnaam per seizoen, bijv. 2025 -> "SC Botlek 6".
+// Het team krijgt soms elk seizoen een ander nummer.
+export function teamNameBySeason(events: { starts_at: string; team_name: string | null }[]): Map<number, string> {
+  const counts = new Map<number, Map<string, number>>()
+  for (const e of events) {
+    if (!e.team_name) continue
+    const y = seasonOf(e.starts_at)
+    const m = counts.get(y) ?? new Map<string, number>()
+    m.set(e.team_name, (m.get(e.team_name) ?? 0) + 1)
+    counts.set(y, m)
+  }
+  const result = new Map<number, string>()
+  for (const [y, m] of counts) {
+    const best = [...m.entries()].sort((a, b) => b[1] - a[1])[0][0]
+    result.set(y, prettyTeam(best))
+  }
+  return result
 }

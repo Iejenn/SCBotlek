@@ -58,6 +58,10 @@ Draai `supabase/003_match_stats.sql` in de SQL Editor (eindigt direct op `COMMIT
 Draai `supabase/004_delete_player.sql` (direct `COMMIT;`). Daarna staat er een 🗑️-knop in **Beheer → Selectie**.
 Werkt alleen bij spelers zonder koppeling, aanmeldingen of statistieken.
 
+### 8. Teamnaam per seizoen
+Draai `supabase/005_team_name.sql` (direct `COMMIT;`). Voegt `events.team_name` toe en vult die via de sync,
+zodat vorig seizoen als "SC Botlek 6" en dit seizoen als "SC Botlek 7" wordt getoond.
+
 ## Rollen
 
 | Rol | Kan |

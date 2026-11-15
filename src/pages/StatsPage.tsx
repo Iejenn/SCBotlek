@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../lib/auth'
 import { supabase } from '../lib/supabase'
-import { seasonLabel, seasonOf, seasonRange } from '../lib/season'
+import { seasonLabel, seasonOf, seasonRange, teamNameBySeason } from '../lib/season'
 import Standings from '../components/Standings'
 import { isTeam, type Attendance, type MatchStat, type Player, type TeamEvent } from '../lib/types'
 
@@ -25,6 +25,7 @@ export default function StatsPage() {
   const team = isTeam(profile?.role)
 
   const [seasons, setSeasons] = useState<number[]>([seasonOf(new Date())])
+  const [seasonTeams, setSeasonTeams] = useState<Map<number, string>>(new Map())
   const [season, setSeason] = useState(seasonOf(new Date()))
   const [comp, setComp] = useState<CompFilter>('alles')
   const [sortKey, setSortKey] = useState<SortKey>('goals')
@@ -37,13 +38,19 @@ export default function StatsPage() {
 
   // Welke seizoenen zijn er? Van de oudste activiteit t/m nu.
   useEffect(() => {
-    supabase.from('events').select('starts_at').order('starts_at').limit(1).then(({ data }) => {
-      const first = data?.[0]?.starts_at as string | undefined
-      if (!first) return
-      const list: number[] = []
-      for (let y = seasonOf(new Date()); y >= seasonOf(first); y--) list.push(y)
-      setSeasons(list)
-    })
+    // Alle Sportlink-wedstrijden: voor de lijst met seizoenen + teamnaam per seizoen
+    supabase
+      .from('events')
+      .select('starts_at, team_name')
+      .order('starts_at')
+      .then(({ data }) => {
+        const all = (data as { starts_at: string; team_name: string | null }[] | null) ?? []
+        if (!all.length) return
+        const list: number[] = []
+        for (let y = seasonOf(new Date()); y >= seasonOf(all[0].starts_at); y--) list.push(y)
+        setSeasons(list)
+        setSeasonTeams(teamNameBySeason(all))
+      })
   }, [])
 
   useEffect(() => {
@@ -174,7 +181,11 @@ export default function StatsPage() {
       <div className="page-head">
         <h1>Statistieken</h1>
         <select value={season} onChange={(e) => setSeason(Number(e.target.value))} aria-label="Seizoen">
-          {seasons.map((y) => <option key={y} value={y}>{seasonLabel(y)}</option>)}
+          {seasons.map((y) => (
+            <option key={y} value={y}>
+              {seasonLabel(y)}{seasonTeams.get(y) ? ` · ${seasonTeams.get(y)}` : ''}
+            </option>
+          ))}
         </select>
       </div>
 
