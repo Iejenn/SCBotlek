@@ -270,11 +270,36 @@ function UsersTab() {
     void load()
   }
 
+  // Koppel een account aan een speler. Met "__new__" maken we eerst een speler
+  // aan met de naam van het account, zodat dat in één stap gaat.
+  async function linkPlayer(u: Profile, value: string) {
+    setError(null)
+    let playerId: string | null = value || null
+    if (value === '__new__') {
+      const created = await rpc('upsert_player', { p_id: null, p_name: u.display_name })
+      if (!created.ok) {
+        setError(reasonText(created.reason))
+        return
+      }
+      playerId = created.id as string
+    }
+    const res = await rpc('admin_link_player', { p_user_id: u.id, p_player_id: playerId })
+    if (!res.ok) {
+      setError(reasonText(res.reason))
+    } else if (playerId && u.role === 'supporter' && u.id !== me?.id) {
+      // Een gekoppelde supporter kan zich niet aanmelden; maak er meteen een speler van
+      const promoted = await rpc('admin_set_role', { p_user_id: u.id, p_role: 'speler' })
+      if (!promoted.ok) setError(reasonText(promoted.reason))
+    }
+    void load()
+  }
+
   return (
     <div className="card">
       <p className="muted small">
         Nieuwe accounts zijn altijd supporter. Maak teamleden <b>speler</b> en koppel ze aan hun naam in de selectie,
-        dan kunnen ze zich aan- en afmelden.
+        dan kunnen ze zich aan- en afmelden. Staat iemand nog niet in de selectie? Kies
+        <b> "+ Nieuwe speler"</b>: dan wordt de speler aangemaakt, gekoppeld en (als het een supporter was) speler gemaakt.
       </p>
       {error && <p className="error">{error}</p>}
       <div className="table-wrap">
@@ -303,9 +328,10 @@ function UsersTab() {
                   <td>
                     <select
                       value={u.player_id ?? ''}
-                      onChange={(e) => act('admin_link_player', { p_user_id: u.id, p_player_id: e.target.value || null })}
+                      onChange={(e) => void linkPlayer(u, e.target.value)}
                     >
                       <option value="">– geen –</option>
+                      {!u.player_id && <option value="__new__">+ Nieuwe speler: {u.display_name}</option>}
                       {players.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
                   </td>

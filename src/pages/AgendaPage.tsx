@@ -76,7 +76,14 @@ export default function AgendaPage() {
       </div>
 
       {team && !myPlayerId && (
-        <p className="notice">Je account is nog niet aan een speler gekoppeld, dus je kunt je nog niet aan- of afmelden.</p>
+        <p className="notice">
+          Je account is nog niet aan een speler gekoppeld, dus je kunt je nog niet aan- of afmelden.{' '}
+          {profile?.role === 'beheerder' ? (
+            <>Ga naar <Link to="/beheer">Beheer → Gebruikers</Link> en kies bij jezelf "+ Nieuwe speler".</>
+          ) : (
+            <>Vraag de beheerder om je te koppelen.</>
+          )}
+        </p>
       )}
 
       {loading ? (
