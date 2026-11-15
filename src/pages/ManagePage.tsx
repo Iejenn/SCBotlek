@@ -100,6 +100,7 @@ function SquadTab() {
       </form>
       {error && <p className="error">{error}</p>}
 
+      <div className="table-wrap">
       <table className="table">
         <thead>
           <tr><th>Nr.</th><th>Naam</th><th>Positie</th><th>Actief</th><th></th></tr>
@@ -107,8 +108,40 @@ function SquadTab() {
         <tbody>
           {players.map((p) => (
             <tr key={p.id} className={p.active ? '' : 'is-inactive'}>
-              <td>{p.shirt_number ?? '–'}</td>
-              <td>{p.name}</td>
+              {/* Rugnummer en naam direct aanpasbaar; opslaan bij verlaten van het veld of Enter */}
+              <td>
+                <input
+                  key={`nr-${p.id}-${p.shirt_number ?? ''}`}
+                  type="number"
+                  min={1}
+                  max={99}
+                  inputMode="numeric"
+                  className="input-num"
+                  defaultValue={p.shirt_number ?? ''}
+                  placeholder="–"
+                  aria-label={`Rugnummer ${p.name}`}
+                  onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                  onBlur={(e) => {
+                    const v = e.target.value === '' ? null : Number(e.target.value)
+                    if (v !== p.shirt_number) void save({ ...p, shirt_number: v })
+                  }}
+                />
+              </td>
+              <td>
+                <input
+                  key={`naam-${p.id}-${p.name}`}
+                  className="input-name"
+                  defaultValue={p.name}
+                  maxLength={40}
+                  aria-label={`Naam ${p.name}`}
+                  onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                  onBlur={(e) => {
+                    const v = e.target.value.trim()
+                    if (!v) e.target.value = p.name // lege naam niet opslaan
+                    else if (v !== p.name) void save({ ...p, name: v })
+                  }}
+                />
+              </td>
               <td>
                 <select
                   value={p.position ?? ''}
@@ -134,7 +167,8 @@ function SquadTab() {
           ))}
         </tbody>
       </table>
-      <p className="muted small">Spelers die vertrekken: vinkje "actief" uit, zo blijven hun statistieken bewaard. Verwijderen kan alleen bij
+      </div>
+      <p className="muted small">Rugnummer of naam aanpassen: tik erop, wijzig en tik ernaast. Spelers die vertrekken: vinkje "actief" uit, zo blijven hun statistieken bewaard. Verwijderen kan alleen bij
         spelers zonder koppeling, aanmeldingen of statistieken (bijv. per ongeluk dubbel aangemaakt).</p>
     </div>
   )
