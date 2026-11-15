@@ -6,7 +6,7 @@ import Standings from '../components/Standings'
 import { isTeam, type Attendance, type MatchStat, type Player, type TeamEvent } from '../lib/types'
 
 type CompFilter = 'alles' | 'competitie' | 'beker'
-type SortKey = 'goals' | 'assists' | 'ga' | 'cards'
+type SortKey = 'goals' | 'assists' | 'ga' | 'yellow' | 'red'
 
 type PlayerRow = {
   player: Player
@@ -155,7 +155,8 @@ export default function StatsPage() {
       case 'goals': return r.goals * 1000 + r.assists
       case 'assists': return r.assists * 1000 + r.goals
       case 'ga': return (r.goals + r.assists) * 1000 + r.goals
-      case 'cards': return r.red * 1000 + r.yellow
+      case 'yellow': return r.yellow * 1000 + r.red
+      case 'red': return r.red * 1000 + r.yellow
     }
   }
   const sorted = [...rows].sort((a, b) => sortValue(b) - sortValue(a) || a.player.name.localeCompare(b.player.name))
@@ -256,7 +257,8 @@ export default function StatsPage() {
                     <Th k="goals" title="Doelpunten">⚽</Th>
                     <Th k="assists" title="Assists">🅰️</Th>
                     <Th k="ga" title="Doelpunten + assists" className="hide-sm">G+A</Th>
-                    <Th k="cards" title="Kaarten" className="hide-sm">🟨🟥</Th>
+                    <Th k="yellow" title="Gele kaarten">🟨</Th>
+                    <Th k="red" title="Rode kaarten">🟥</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -269,16 +271,15 @@ export default function StatsPage() {
                       <td className="num strong">{r.goals || '–'}</td>
                       <td className="num">{r.assists || '–'}</td>
                       <td className="num hide-sm">{r.goals + r.assists || '–'}</td>
-                      <td className="num hide-sm">
-                        {r.yellow || r.red ? `${r.yellow}${r.red ? ` / ${r.red}` : ''}` : '–'}
-                      </td>
+                      <td className="num">{r.yellow || '–'}</td>
+                      <td className="num">{r.red || '–'}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
             <p className="muted small">
-              Tik op een kolomkop om te sorteren. Kaarten: geel / rood.
+              Tik op een kolomkop om te sorteren.
             </p>
           </div>
 
