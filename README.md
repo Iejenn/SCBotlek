@@ -82,10 +82,15 @@ staan nu alleen de vinkjes "Actief" en "Leen".
 Draai `supabase/010_waitlist_after_match.sql` (direct `COMMIT;`). De limiet geldt alleen vóór de wedstrijd;
 achteraf kan de aanvoerder iedereen op aanwezig zetten en schuift de wachtlijst niet meer vanzelf door.
 
+### 14. Openbaar meekijken
+Draai `supabase/011_public_read.sql` (direct `COMMIT;`). Bezoekers zonder account zien dan de startpagina,
+agenda, uitslagen en statistieken. Aanwezigheid en accounts blijven privé; wijzigen kan alleen ingelogd.
+
 ## Rollen
 
 | Rol | Kan |
 |---|---|
+| Bezoeker (geen account) | Startpagina, agenda, uitslagen, wedstrijdverslagen, stand en statistieken bekijken. Geen aanwezigheid |
 | Supporter | Standaard na registratie. Agenda, uitslagen, wedstrijdverslagen en statistieken (stand, topscorers) bekijken. Geen aanmeldingen, ziet niet wie er komt |
 | Speler | + zelf aan/afmelden (✓ ? ✕, wachtlijst), zien wie er komt, aanwezigheidsstatistieken. Account moet gekoppeld zijn aan een speler |
 | Aanvoerder | + aanwezigheid voor anderen invullen (ook achteraf), statistieken invullen, wedstrijden/trainingen, selectie, instellingen, Sportlink |

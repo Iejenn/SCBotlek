@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase, usernameToEmail, USERNAME_PATTERN } from '../lib/supabase'
 
 // Inloggen of registreren met gebruikersnaam + wachtwoord.
@@ -55,7 +56,8 @@ export default function LoginPage() {
       <form className="card login-card" onSubmit={handleSubmit}>
         <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="SC Botlek" className="login-logo" />
         <h1>SC Botlek</h1>
-        <p className="muted">{mode === 'login' ? 'Log in om verder te gaan' : 'Maak een account aan'}</p>
+        <p className="small"><Link to="/">← Terug naar het overzicht</Link></p>
+        <p className="muted">{mode === 'login' ? 'Inloggen voor spelers' : 'Maak een account aan'}</p>
 
         <label>
           Gebruikersnaam

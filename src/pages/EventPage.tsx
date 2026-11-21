@@ -77,7 +77,7 @@ export default function EventPage() {
   }
 
   if (loading) return <p className="muted">Laden…</p>
-  if (!ev) return <p>Activiteit niet gevonden. <Link to="/">Terug naar agenda</Link></p>
+  if (!ev) return <p>Activiteit niet gevonden. <Link to="/agenda">Terug naar agenda</Link></p>
 
   const upcoming = new Date(ev.starts_at) > new Date() && ev.status !== 'afgelast'
   const started = new Date(ev.starts_at) <= new Date()
@@ -111,7 +111,7 @@ export default function EventPage() {
 
   return (
     <div>
-      <Link to="/" className="back">← Agenda</Link>
+      <Link to="/agenda" className="back">← Agenda</Link>
 
       <div className={`card event-hero kind-${ev.kind}`}>
         <div className="event-hero-top">

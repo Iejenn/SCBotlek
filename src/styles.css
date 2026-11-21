@@ -311,3 +311,16 @@ label.check-row { flex-direction: row; align-items: center; gap: 10px; }
 .install-steps { margin: 4px 0 10px; padding-left: 18px; font-size: 0.9rem; display: grid; gap: 4px; }
 .share-icon { vertical-align: -3px; color: var(--accent); }
 .install-actions { display: flex; gap: 8px; }
+
+/* ---------- startpagina (bezoekers) ---------- */
+.home { max-width: 520px; margin: 0 auto; }
+.home-hero { text-align: center; margin: 8px 0 20px; }
+.home-hero h1 { margin: 10px 0 4px; }
+.home-hero p { margin: 0; }
+.home-logo { width: 96px; height: 96px; object-fit: contain; background: #fff; border-radius: 16px; padding: 6px; }
+.home-cards { display: grid; gap: 10px; margin-bottom: 18px; }
+.home-match { display: flex; flex-direction: column; gap: 4px; text-decoration: none; color: inherit; margin: 0; border-left: 4px solid var(--red); }
+.home-result { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.home-actions { display: grid; gap: 10px; }
+.btn-big { padding: 14px 18px; font-size: 1.05rem; text-align: center; }
+.home-login { text-align: center; font-size: 0.85rem; color: var(--muted); margin-top: 22px; }

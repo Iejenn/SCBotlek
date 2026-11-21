@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react'
-import { NavLink } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { ROLE_LABELS, isStaff } from '../lib/types'
 import { usePendingCount } from '../lib/pendingUsers'
 
 export default function Layout({ children }: { children: ReactNode }) {
-  const { profile, signOut } = useAuth()
+  const { session, profile, signOut } = useAuth()
   const pending = usePendingCount(profile?.role === 'beheerder')
 
   return (
@@ -17,7 +17,8 @@ export default function Layout({ children }: { children: ReactNode }) {
             <span>SC Botlek</span>
           </NavLink>
           <nav className="nav">
-            <NavLink to="/" end>Agenda</NavLink>
+            {/* Ingelogd: agenda op "/"; bezoekers: "/" is de startpagina */}
+            {session ? <NavLink to="/" end>Agenda</NavLink> : <NavLink to="/agenda">Agenda</NavLink>}
             <NavLink to="/statistieken">Statistieken</NavLink>
             {isStaff(profile?.role) && (
               <NavLink to="/beheer">
@@ -33,7 +34,11 @@ export default function Layout({ children }: { children: ReactNode }) {
                 <span className="role-tag">{ROLE_LABELS[profile.role]}</span>
               </span>
             )}
-            <button className="btn btn-ghost btn-small" onClick={signOut}>Uitloggen</button>
+            {session ? (
+              <button className="btn btn-ghost btn-small" onClick={signOut}>Uitloggen</button>
+            ) : (
+              <Link to="/inloggen" className="btn btn-ghost btn-small">Inloggen</Link>
+            )}
           </div>
         </div>
         {/* rood-blauwe band uit het clublogo */}

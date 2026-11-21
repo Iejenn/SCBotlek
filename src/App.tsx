@@ -9,6 +9,7 @@ import EventPage from './pages/EventPage'
 import EventFormPage from './pages/EventFormPage'
 import ManagePage from './pages/ManagePage'
 import StatsPage from './pages/StatsPage'
+import HomePage from './pages/HomePage'
 
 export default function App() {
   const { session, profile, loading, signOut } = useAuth()
@@ -25,9 +26,8 @@ export default function App() {
   }
 
   if (loading) return <div className="center-screen muted">Laden…</div>
-  if (!session) return <LoginPage />
 
-  if (profile?.blocked) {
+  if (session && profile?.blocked) {
     return (
       <div className="center-screen">
         <div className="card">
@@ -42,9 +42,22 @@ export default function App() {
   const staff = isStaff(profile?.role)
 
   return (
+    <Routes>
+      {/* Inlogpagina zonder menu; wie al ingelogd is gaat terug naar de start */}
+      <Route path="/inloggen" element={session ? <Navigate to="/" replace /> : <LoginPage />} />
+      <Route path="*" element={<LoggedOutOrIn session={!!session} staff={staff} />} />
+    </Routes>
+  )
+}
+
+// Iedereen mag meekijken (agenda, statistieken). Bezoekers zonder account krijgen
+// op "/" een startpagina; ingelogde gebruikers direct de agenda.
+function LoggedOutOrIn({ session, staff }: { session: boolean; staff: boolean }) {
+  return (
     <Layout>
       <Routes>
-        <Route path="/" element={<AgendaPage />} />
+        <Route path="/" element={session ? <AgendaPage /> : <HomePage />} />
+        <Route path="/agenda" element={<AgendaPage />} />
         <Route path="/activiteit/:id" element={<EventPage />} />
         <Route path="/statistieken" element={<StatsPage />} />
         {/* Beheerpagina's alleen tonen aan staf; de database checkt het nogmaals */}
